@@ -1,0 +1,2768 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0908" />
+<title>The Darkroom · Studio v0.9</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0908; --bg-2: #14110f; --bg-3: #1c1815;
+    --border: #2a2522; --border-2: #3a322d;
+    --text: #f5ede0; --text-2: #a8a098; --text-3: #6e655d; --text-4: #4a423c;
+    --amber: #e6c890; --amber-bright: #f0d6a8; --amber-dim: rgba(230,200,144,0.5);
+    --accent-2: #d97a4a; --red: #d97070; --red-bg: rgba(120,30,30,0.18);
+    --green: #8aba7a; --violet: #a9a1d9; --violet-dim: rgba(169,161,217,0.35);
+    --cyan: #7ab8ba;
+  }
+  html, body { background: var(--bg); color: var(--text); }
+  body { font-family: 'Manrope', system-ui, -apple-system, sans-serif; min-height: 100vh; overflow-x: hidden; position: relative; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+  body::before, body::after { content: ''; position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; }
+  body::before { top: -10%; left: 15%; width: 650px; height: 650px; background: radial-gradient(circle, rgba(217,156,89,0.28) 0%, transparent 70%); filter: blur(90px); }
+  body::after { bottom: -10%; right: 15%; width: 550px; height: 550px; background: radial-gradient(circle, rgba(180,90,40,0.3) 0%, transparent 70%); filter: blur(110px); }
+  .grain { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.04; mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E"); }
+  .container { position: relative; z-index: 2; max-width: 1200px; margin: 0 auto; padding: 32px 20px 64px; }
+  @media (min-width: 768px) { .container { padding: 48px 32px; } }
+
+  /* ========== LOCK SCREEN (Team mode) ========== */
+  .lock-screen {
+    position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    animation: fadeIn 0.3s ease-out;
+  }
+  .lock-screen.hidden { display: none; }
+  .lock-screen::before, .lock-screen::after {
+    content: ''; position: absolute; border-radius: 50%; pointer-events: none;
+  }
+  .lock-screen::before {
+    top: 5%; left: 50%; transform: translateX(-50%);
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(217,156,89,0.2) 0%, transparent 70%);
+    filter: blur(80px);
+  }
+  .lock-screen::after {
+    bottom: 10%; left: 50%; transform: translateX(-50%);
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(169,161,217,0.15) 0%, transparent 70%);
+    filter: blur(100px);
+  }
+  .lock-card {
+    position: relative; z-index: 2;
+    max-width: 420px; width: 100%;
+    padding: 44px 36px;
+    border: 1px solid var(--border);
+    background: rgba(20,17,15,0.7);
+    backdrop-filter: blur(12px);
+    text-align: center;
+    animation: fadeUp 0.4s ease-out;
+  }
+  .lock-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase;
+    color: rgba(230,200,144,0.7);
+    margin-bottom: 20px;
+  }
+  .lock-eyebrow::before, .lock-eyebrow::after {
+    content: ''; width: 18px; height: 1px; background: rgba(230,200,144,0.3);
+  }
+  .lock-title { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 52px; line-height: 0.95; letter-spacing: -0.02em; color: #faf6ee; margin-bottom: 4px; }
+  .lock-title em { color: var(--amber); font-style: italic; }
+  .lock-subtitle {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--text-3); letter-spacing: 0.3em; text-transform: uppercase;
+    margin-bottom: 36px;
+  }
+  .lock-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; border: 1px solid var(--border-2);
+    border-radius: 50%; color: var(--amber-dim); margin-bottom: 24px;
+  }
+  .lock-icon svg { width: 20px; height: 20px; }
+  .lock-input-wrap { margin-bottom: 14px; }
+  .lock-input-wrap .input-wrap { background: var(--bg); padding: 12px 14px; }
+  .lock-input-wrap input { font-family: 'Manrope', sans-serif; font-size: 14px; }
+  .lock-remember {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 12px; color: var(--text-2); cursor: pointer;
+    margin-bottom: 20px; user-select: none;
+  }
+  .lock-remember input { accent-color: var(--amber); width: 14px; height: 14px; }
+  .lock-error {
+    margin-bottom: 14px; padding: 8px 12px;
+    background: var(--red-bg); border: 1px solid rgba(180,60,60,0.5);
+    color: #f0a8a8; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; line-height: 1.4;
+  }
+  .lock-unlock-btn {
+    width: 100%; padding: 13px 20px;
+    background: var(--amber); color: #1a1612;
+    border: none; font-family: inherit; font-weight: 600; font-size: 14px;
+    letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .lock-unlock-btn:hover:not(:disabled) { background: var(--amber-bright); transform: translateY(-1px); }
+  .lock-unlock-btn:disabled { background: var(--bg-3); color: var(--text-4); cursor: not-allowed; }
+  .lock-unlock-btn svg { width: 14px; height: 14px; }
+  .lock-footer {
+    margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text-4); line-height: 1.5;
+  }
+
+  /* Team badge in header */
+  .team-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 9px; border: 1px solid rgba(138,186,122,0.4);
+    background: rgba(138,186,122,0.06); color: var(--green);
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.2em; margin-left: 10px; vertical-align: middle;
+  }
+  .team-badge svg { width: 10px; height: 10px; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 32px; }
+  .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase; color: rgba(230,200,144,0.6); margin-bottom: 12px; }
+  .eyebrow::before { content: ''; width: 24px; height: 1px; background: rgba(230,200,144,0.4); }
+  h1 { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 52px; line-height: 0.9; letter-spacing: -0.02em; color: #faf6ee; }
+  @media (min-width: 768px) { h1 { font-size: 72px; } }
+  h1 em { color: rgba(230,200,144,0.95); font-style: italic; }
+  .version { display: inline-block; margin-left: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-3); vertical-align: super; letter-spacing: 0.1em; }
+  .lead { margin-top: 14px; color: var(--text-2); font-size: 14px; line-height: 1.6; max-width: 420px; }
+  .icon-btn { flex-shrink: 0; background: transparent; border: 1px solid var(--border); color: var(--text-3); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+  .icon-btn:hover, .icon-btn.active { color: var(--amber); border-color: var(--amber-dim); background: rgba(230,200,144,0.05); }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  /* Settings */
+  .settings { margin-bottom: 28px; padding: 20px; border: 1px solid var(--border); background: rgba(20,17,15,0.5); backdrop-filter: blur(8px); animation: slideDown 0.3s ease-out; }
+  @media (min-width: 768px) { .settings { padding: 24px; } }
+  .settings-title { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(230,200,144,0.8); margin-bottom: 20px; }
+  .settings-title svg { width: 11px; height: 11px; }
+
+  /* Admin section (team deploy) */
+  .admin-section {
+    margin-top: 24px; padding-top: 20px;
+    border-top: 1px dashed var(--border-2);
+  }
+  .admin-section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--violet); margin-bottom: 14px;
+  }
+  .admin-section-title svg { width: 11px; height: 11px; }
+  .admin-warning {
+    margin-top: 14px; padding: 12px 14px;
+    background: rgba(217,156,89,0.06); border: 1px solid rgba(217,156,89,0.25);
+    color: #c9b288; font-size: 11px; line-height: 1.6;
+  }
+  .admin-warning strong { color: var(--amber-bright); }
+  .admin-deploy-btn {
+    width: 100%; padding: 12px 20px;
+    background: transparent; border: 1px solid var(--violet-dim); color: var(--violet);
+    font-family: inherit; font-weight: 500; font-size: 13px;
+    cursor: pointer; transition: all 0.2s; display: flex;
+    align-items: center; justify-content: center; gap: 8px;
+    margin-top: 12px;
+  }
+  .admin-deploy-btn:hover:not(:disabled) { background: rgba(169,161,217,0.08); border-color: var(--violet); }
+  .admin-deploy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .admin-deploy-btn svg { width: 13px; height: 13px; }
+  .admin-success {
+    margin-top: 12px; padding: 10px 14px;
+    background: rgba(138,186,122,0.06); border: 1px solid rgba(138,186,122,0.3);
+    color: var(--green); font-size: 11px; line-height: 1.5;
+  }
+
+  /* Team member mode: relock button */
+  .team-relock {
+    margin-top: 16px; padding: 10px 14px;
+    background: transparent; border: 1px solid var(--border-2); color: var(--text-3);
+    font-family: inherit; font-size: 12px; cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .team-relock:hover { color: var(--red); border-color: rgba(180,60,60,0.5); }
+  .team-relock svg { width: 12px; height: 12px; }
+
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+  label { display: block; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+  .field-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .field-head label { margin: 0; }
+  .input-wrap { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); transition: border-color 0.2s; }
+  .input-wrap:focus-within { border-color: var(--amber-dim); }
+  .input-wrap input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 14px; font-family: 'JetBrains Mono', monospace; min-width: 0; }
+  .input-wrap input::placeholder { color: var(--text-4); }
+  .input-wrap button { background: transparent; border: none; color: var(--text-3); cursor: pointer; padding: 4px; display: flex; }
+  .input-wrap button:hover { color: var(--text-2); }
+  .input-wrap button svg { width: 14px; height: 14px; }
+  .field-hint { margin-top: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+  .field-hint a { font-size: 12px; color: var(--text-3); text-decoration: underline; text-decoration-color: var(--border-2); text-underline-offset: 4px; }
+  .field-hint a:hover { color: rgba(230,200,144,0.8); }
+  .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); cursor: pointer; user-select: none; }
+  .checkbox-label input { accent-color: var(--amber); width: 14px; height: 14px; }
+  .field-desc { margin-top: 6px; font-size: 11px; color: var(--text-3); line-height: 1.5; }
+
+  /* Tabs */
+  .tabs-nav { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 32px; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .tabs-nav::-webkit-scrollbar { display: none; }
+  .tab { position: relative; background: transparent; border: none; color: var(--text-3); padding: 14px 20px 16px; font-family: inherit; font-size: 14px; cursor: pointer; transition: color 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+  .tab svg { width: 14px; height: 14px; }
+  .tab .tab-label { font-weight: 500; }
+  .tab .tab-num { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 18px; color: var(--text-4); }
+  .tab:hover { color: var(--text-2); }
+  .tab.active { color: var(--amber); }
+  .tab.active .tab-num { color: var(--amber-dim); }
+  .tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--amber); }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s ease-out; }
+  .panel-grid { display: grid; grid-template-columns: 1fr; gap: 32px; margin-bottom: 40px; }
+  @media (min-width: 900px) { .panel-grid { grid-template-columns: 5fr 4fr; gap: 40px; } }
+  .panel-section-title { font-family: 'Instrument Serif', serif; font-size: 22px; color: #e8e0d2; margin-bottom: 14px; display: flex; align-items: baseline; gap: 10px; }
+  .panel-section-title .num { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-4); letter-spacing: 0.2em; }
+
+  textarea { width: 100%; background: rgba(20,17,15,0.5); border: 1px solid var(--border); color: var(--text); padding: 14px; font-family: 'Manrope', sans-serif; font-size: 14px; line-height: 1.55; outline: none; resize: vertical; min-height: 90px; transition: border-color 0.2s; }
+  textarea:focus { border-color: var(--amber-dim); }
+  textarea::placeholder { color: var(--text-4); }
+  select { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; font-size: 13px; font-family: 'JetBrains Mono', monospace; outline: none; cursor: pointer; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8a098' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+  select:focus { border-color: var(--amber-dim); }
+  .num-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; font-size: 13px; font-family: 'JetBrains Mono', monospace; outline: none; }
+  .num-input:focus { border-color: var(--amber-dim); }
+
+  /* Chips */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: rgba(20,17,15,0.6); border: 1px solid var(--border); color: var(--text-2); padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 68px; }
+  .chip:hover { border-color: var(--border-2); }
+  .chip.active { background: var(--amber); color: #1a1612; border-color: var(--amber); font-weight: 600; }
+  .chip .chip-ratio { font-size: 12px; letter-spacing: 0.05em; }
+  .chip .chip-desc { font-size: 9px; opacity: 0.7; letter-spacing: 0.05em; }
+
+  /* Preset mode tabs (ratio vs platform) */
+  .preset-mode-tabs { display: flex; gap: 2px; border: 1px solid var(--border); padding: 3px; background: rgba(20,17,15,0.4); margin-bottom: 10px; width: fit-content; }
+  .preset-mode-tab { background: transparent; border: none; color: var(--text-3); padding: 6px 14px; font-family: inherit; font-size: 11px; letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+  .preset-mode-tab:hover { color: var(--text-2); }
+  .preset-mode-tab.active { background: var(--amber); color: #1a1612; font-weight: 600; }
+  .preset-mode-tab svg { width: 11px; height: 11px; }
+
+  /* Platform chips - richer, two-line */
+  .platform-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  @media (min-width: 500px) { .platform-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 900px) { .platform-grid { grid-template-columns: repeat(3, 1fr); } }
+  .platform-chip { background: rgba(20,17,15,0.6); border: 1px solid var(--border); color: var(--text-2); padding: 10px 12px; font-family: inherit; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 10px; text-align: left; min-height: 52px; }
+  .platform-chip:hover { border-color: var(--border-2); background: rgba(20,17,15,0.85); }
+  .platform-chip.active { background: var(--amber); color: #1a1612; border-color: var(--amber); }
+  .platform-chip.active .platform-chip-size { color: rgba(26,22,18,0.7); }
+  .platform-chip.active .platform-chip-badge { background: rgba(26,22,18,0.15); color: #1a1612; }
+  .platform-chip-emoji { font-size: 20px; flex-shrink: 0; }
+  .platform-chip-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .platform-chip-name { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
+  .platform-chip-size { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-3); letter-spacing: 0.05em; }
+  .platform-chip-badge { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.1em; padding: 1px 4px; background: rgba(217,122,74,0.15); color: var(--accent-2); border-radius: 2px; }
+
+  .platform-note {
+    margin-top: 10px; padding: 10px 12px;
+    background: rgba(217,122,74,0.06); border: 1px solid rgba(217,122,74,0.2);
+    color: #d8a890; font-size: 11px; line-height: 1.55;
+  }
+  .platform-note strong { color: var(--amber-bright); }
+
+  /* === Editor Subtabs (AI 편집 vs 크롭만) === */
+  .editor-subtabs {
+    display: flex; gap: 2px;
+    border: 1px solid var(--border);
+    padding: 3px;
+    background: rgba(20,17,15,0.4);
+    width: fit-content;
+    margin-bottom: 24px;
+  }
+  .editor-subtab {
+    background: transparent; border: none;
+    color: var(--text-3);
+    padding: 9px 22px;
+    font-family: inherit; font-size: 12px;
+    letter-spacing: 0.08em; cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .editor-subtab:hover { color: var(--text-2); }
+  .editor-subtab.active {
+    background: var(--amber); color: #1a1612; font-weight: 600;
+  }
+  .editor-subtab svg { width: 12px; height: 12px; }
+
+  /* === Crop Studio === */
+  .crop-select-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px;
+    padding: 8px 0 10px;
+    margin-bottom: 6px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .crop-count-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-3);
+    letter-spacing: 0.1em;
+  }
+  .crop-count-text strong { color: var(--amber); }
+  .crop-mini-btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
+  .crop-mini-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-3); font-size: 10px;
+    cursor: pointer; padding: 4px 9px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .crop-mini-btn:hover { color: var(--amber); border-color: var(--amber-dim); }
+
+  .crop-platform-list {
+    display: flex; flex-direction: column; gap: 2px;
+    max-height: 460px; overflow-y: auto;
+    border: 1px solid var(--border);
+    padding: 6px;
+    background: rgba(20,17,15,0.3);
+  }
+  .crop-platform-list::-webkit-scrollbar { width: 8px; }
+  .crop-platform-list::-webkit-scrollbar-track { background: transparent; }
+  .crop-platform-list::-webkit-scrollbar-thumb {
+    background: var(--border-2); border-radius: 4px;
+  }
+
+  .crop-category-label {
+    font-size: 9px; letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    padding: 10px 6px 4px;
+  }
+  .crop-category-label:first-child { padding-top: 2px; }
+
+  .crop-platform-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .crop-platform-item:hover {
+    background: rgba(20,17,15,0.6);
+    border-color: var(--border-2);
+  }
+  .crop-platform-item.selected {
+    background: rgba(230,200,144,0.07);
+    border-color: var(--amber-dim);
+  }
+  .crop-platform-item input[type=checkbox] {
+    accent-color: var(--amber);
+    width: 15px; height: 15px;
+    flex-shrink: 0; cursor: pointer;
+  }
+  .crop-item-emoji { font-size: 17px; flex-shrink: 0; }
+  .crop-item-body { flex: 1; min-width: 0; }
+  .crop-item-name {
+    font-size: 12px; font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+    flex-wrap: wrap;
+  }
+  .crop-item-size {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-3);
+    margin-top: 2px;
+  }
+  .crop-item-warn {
+    font-size: 9px; color: var(--accent-2);
+    padding-left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .crop-item-badge {
+    font-family: 'JetBrains Mono', monospace; font-size: 8px;
+    letter-spacing: 0.1em; padding: 1px 4px;
+    background: rgba(217,122,74,0.15); color: var(--accent-2);
+    border-radius: 2px;
+  }
+
+  .crop-empty {
+    padding: 32px 20px; text-align: center;
+    color: var(--text-4); font-size: 12px;
+    line-height: 1.6;
+  }
+  .crop-empty strong { color: var(--text-2); display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
+
+  .card-badge.crop { color: #7a9cba; border-color: rgba(122,156,186,0.4); }
+
+  /* === Crop mode selector === */
+  .crop-mode-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 500px) {
+    .crop-mode-selector { grid-template-columns: 1fr; }
+  }
+  .crop-mode-option {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 12px 14px;
+    background: rgba(20,17,15,0.4);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .crop-mode-option:hover {
+    border-color: var(--border-2);
+    background: rgba(20,17,15,0.7);
+  }
+  .crop-mode-option.selected {
+    background: rgba(230,200,144,0.06);
+    border-color: var(--amber-dim);
+  }
+  .crop-mode-option input { display: none; }
+  .crop-mode-option-head {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-2);
+  }
+  .crop-mode-option.selected .crop-mode-option-head {
+    color: var(--amber);
+  }
+  .crop-mode-option-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1.5px solid var(--text-3);
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .crop-mode-option.selected .crop-mode-option-dot {
+    background: var(--amber);
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(230,200,144,0.15);
+  }
+  .crop-mode-option-desc {
+    font-size: 10px; color: var(--text-4); line-height: 1.5;
+    font-family: 'Manrope', sans-serif;
+    padding-left: 16px;
+  }
+
+  /* === Custom crop size input === */
+  .crop-custom-add {
+    margin-bottom: 10px;
+    padding: 12px;
+    background: rgba(122,184,186,0.04);
+    border: 1px solid rgba(122,184,186,0.2);
+  }
+  .crop-custom-add-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; letter-spacing: 0.25em;
+    text-transform: uppercase; color: var(--cyan);
+    margin-bottom: 8px;
+  }
+  .crop-custom-add-title svg { width: 11px; height: 11px; }
+  .crop-custom-inputs {
+    display: flex; gap: 5px;
+    align-items: center; flex-wrap: wrap;
+  }
+  .crop-custom-inputs input[type=number] {
+    width: 68px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 7px 9px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .crop-custom-inputs input[type=text] {
+    flex: 1; min-width: 90px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 7px 10px;
+    font-family: inherit; font-size: 11px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .crop-custom-inputs input:focus { border-color: rgba(122,184,186,0.6); }
+  .crop-custom-inputs input::placeholder { color: var(--text-4); }
+  .crop-custom-x {
+    color: var(--text-4); font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  }
+  .crop-custom-add-btn {
+    background: transparent;
+    border: 1px solid rgba(122,184,186,0.4);
+    color: var(--cyan);
+    padding: 7px 12px;
+    font-family: inherit; font-size: 11px;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .crop-custom-add-btn:hover:not(:disabled) {
+    background: rgba(122,184,186,0.08);
+    border-color: var(--cyan);
+  }
+  .crop-custom-add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .crop-custom-add-btn svg { width: 11px; height: 11px; }
+  .crop-custom-hint {
+    margin-top: 8px;
+    font-size: 10px; color: var(--text-4); line-height: 1.5;
+  }
+
+  .crop-item-remove {
+    background: transparent; border: none;
+    color: var(--text-4); cursor: pointer;
+    padding: 4px 6px; display: flex;
+    align-items: center; justify-content: center;
+    transition: color 0.15s;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .crop-item-remove:hover { color: var(--red); }
+  .crop-item-remove svg { width: 12px; height: 12px; }
+
+  .size-row { display: flex; align-items: center; gap: 10px; }
+  .size-row .num-input { max-width: 110px; }
+  .size-row .x { color: var(--text-4); font-family: 'JetBrains Mono', monospace; }
+  .count-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .count-buttons { display: flex; gap: 2px; background: rgba(20,17,15,0.6); border: 1px solid var(--border); padding: 3px; }
+  .count-btn { min-width: 32px; height: 32px; background: transparent; border: none; color: var(--text-2); font-size: 13px; cursor: pointer; font-family: inherit; padding: 0 6px; transition: all 0.15s; }
+  .count-btn:hover { background: var(--bg-3); }
+  .count-btn.active { background: var(--amber); color: #1a1612; font-weight: 600; }
+
+  /* Buttons */
+  .primary-btn { display: flex; align-items: center; gap: 10px; padding: 14px 28px; background: var(--amber); color: #1a1612; border: none; font-family: inherit; font-weight: 600; font-size: 14px; letter-spacing: 0.04em; cursor: pointer; transition: all 0.2s; width: 100%; justify-content: center; }
+  .primary-btn:hover:not(:disabled) { background: var(--amber-bright); transform: translateY(-1px); }
+  .primary-btn:disabled { background: var(--bg-3); color: var(--text-4); cursor: not-allowed; }
+  .primary-btn svg { width: 15px; height: 15px; }
+  .secondary-btn { background: transparent; border: 1px solid var(--border-2); color: var(--text-2); padding: 8px 14px; font-family: inherit; font-size: 12px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .secondary-btn:hover:not(:disabled) { border-color: var(--amber-dim); color: var(--amber); }
+  .secondary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .secondary-btn svg { width: 12px; height: 12px; }
+  .ghost-btn { background: transparent; border: 1px solid rgba(169,161,217,0.3); color: var(--violet); padding: 6px 12px; font-family: inherit; font-size: 11px; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px; letter-spacing: 0.02em; }
+  .ghost-btn:hover:not(:disabled) { background: rgba(169,161,217,0.08); border-color: rgba(169,161,217,0.6); }
+  .ghost-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .ghost-btn svg { width: 11px; height: 11px; }
+  .spinner { width: 15px; height: 15px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .error { margin-top: 14px; padding: 12px 14px; background: var(--red-bg); border: 1px solid rgba(180,60,60,0.5); color: #f0a8a8; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.5; word-break: break-word; }
+
+  /* Concept brainstorm */
+  .concept-panel { margin-top: 12px; padding: 14px; border: 1px solid rgba(169,161,217,0.25); background: rgba(169,161,217,0.04); animation: slideDown 0.3s ease-out; }
+  .concept-panel-head { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--violet); margin-bottom: 12px; }
+  .concept-panel-head svg { width: 11px; height: 11px; }
+  .concept-cards { display: flex; flex-direction: column; gap: 8px; }
+  .concept-card { padding: 12px; background: rgba(20,17,15,0.6); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
+  .concept-card:hover { border-color: rgba(169,161,217,0.5); background: rgba(20,17,15,0.85); }
+  .concept-card-title { font-family: 'Instrument Serif', serif; font-size: 17px; color: #e8e0d2; margin-bottom: 6px; line-height: 1.3; }
+  .concept-card-mood { display: inline-block; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--violet); opacity: 0.8; margin-bottom: 8px; }
+  .concept-card-style { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .concept-card-apply { margin-top: 10px; font-size: 10px; color: var(--text-4); letter-spacing: 0.15em; text-transform: uppercase; transition: color 0.2s; }
+  .concept-card:hover .concept-card-apply { color: var(--violet); }
+
+  /* Slots */
+  .slots-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .slot { display: flex; gap: 10px; align-items: flex-start; padding: 10px; background: rgba(20,17,15,0.35); border: 1px solid var(--border); transition: border-color 0.2s; }
+  .slot:hover { border-color: var(--border-2); }
+  .slot-num { flex-shrink: 0; width: 28px; height: 28px; background: var(--bg-3); color: var(--amber); border: 1px solid var(--border-2); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; border-radius: 50%; margin-top: 4px; }
+  .slot textarea { background: transparent; border: none; padding: 4px 0; min-height: 40px; font-size: 13px; }
+  .slot textarea:focus { border: none; }
+  .slot-tools { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 4px; }
+  .slot-sparkle { width: 26px; height: 26px; border: 1px solid rgba(169,161,217,0.3); background: transparent; color: var(--violet); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; border-radius: 4px; }
+  .slot-sparkle:hover:not(:disabled) { background: rgba(169,161,217,0.1); border-color: rgba(169,161,217,0.6); }
+  .slot-sparkle:disabled { opacity: 0.4; cursor: not-allowed; }
+  .slot-sparkle svg { width: 12px; height: 12px; }
+  .slot-status { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+  .slot-status svg { width: 14px; height: 14px; }
+  .slot-status.loading { color: var(--amber); }
+  .slot-status.done { color: var(--green); }
+  .slot-status.err { color: var(--red); }
+
+  /* Ref strip */
+  .ref-strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border: 1px dashed var(--border-2); background: rgba(20,17,15,0.3); min-height: 88px; align-items: center; }
+  .ref-thumb { position: relative; width: 64px; height: 64px; border: 1px solid var(--border); overflow: hidden; background: var(--bg-3); flex-shrink: 0; }
+  .ref-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .ref-thumb .ref-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(10,9,8,0.85); border: none; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: 50%; font-size: 10px; }
+  .ref-thumb .ref-x:hover { background: var(--red); }
+  .ref-thumb .ref-x svg { width: 10px; height: 10px; }
+  .ref-thumb .ref-label { position: absolute; bottom: 2px; left: 2px; padding: 1px 5px; background: rgba(10,9,8,0.85); color: var(--amber); font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.05em; }
+  .ref-add { width: 64px; height: 64px; border: 1px dashed var(--border-2); background: transparent; color: var(--text-3); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: inherit; font-size: 9px; letter-spacing: 0.1em; flex-shrink: 0; transition: all 0.15s; }
+  .ref-add:hover { border-color: var(--amber-dim); color: var(--amber); }
+  .ref-add svg { width: 14px; height: 14px; }
+  .ref-empty-hint { color: var(--text-4); font-size: 11px; padding-left: 4px; }
+
+  /* Upload */
+  .upload-zone { border: 1.5px dashed var(--border-2); padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(20,17,15,0.3); }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--amber-dim); background: rgba(230,200,144,0.04); }
+  .upload-zone .icon-circle { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1px solid var(--border-2); border-radius: 50%; margin-bottom: 12px; color: var(--text-3); }
+  .upload-zone .icon-circle svg { width: 18px; height: 18px; }
+  .upload-zone p { color: var(--text-2); font-size: 13px; margin-bottom: 4px; }
+  .upload-zone .hint { color: var(--text-4); font-size: 11px; }
+  .uploaded-preview { position: relative; border: 1px solid var(--border); background: var(--bg); padding: 12px; }
+  .uploaded-preview img { width: 100%; max-height: 280px; object-fit: contain; display: block; }
+  .uploaded-preview .preview-meta { margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+
+  /* Gallery */
+  .gallery-section { margin-top: 56px; }
+  .gallery-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-3); flex-wrap: wrap; gap: 10px; }
+  .gallery-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .gallery-title h2 { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 30px; color: #e8e0d2; }
+  .gallery-count { font-size: 10px; color: var(--text-4); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; }
+  .gallery-filters { display: flex; gap: 4px; }
+  .gallery-filter { background: transparent; border: 1px solid var(--border); color: var(--text-3); padding: 5px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; cursor: pointer; transition: all 0.15s; }
+  .gallery-filter:hover { color: var(--text-2); }
+  .gallery-filter.active { background: var(--amber); color: #1a1612; border-color: var(--amber); }
+  .clear-btn { display: flex; align-items: center; gap: 6px; background: transparent; border: 1px solid transparent; color: var(--text-3); font-size: 11px; cursor: pointer; padding: 6px 10px; font-family: inherit; transition: all 0.2s; }
+  .clear-btn:hover { color: var(--red); }
+  .clear-btn.confirm { color: #f0a8a8; background: var(--red-bg); border-color: rgba(180,60,60,0.5); }
+  .clear-btn svg { width: 11px; height: 11px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 12px; } }
+  @media (min-width: 900px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 1200px) { .grid { grid-template-columns: repeat(5, 1fr); } }
+  .card { position: relative; background: var(--bg-2); border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: border-color 0.2s; animation: fadeUp 0.5s ease-out backwards; }
+  .card:hover { border-color: var(--amber-dim); }
+  .card-img-wrap { position: relative; width: 100%; background: var(--bg-3); }
+  .card-img-wrap img { width: 100%; height: auto; display: block; transition: transform 0.7s; }
+  .card:hover .card-img-wrap img { transform: scale(1.04); }
+  .card-badge { position: absolute; top: 6px; left: 6px; padding: 3px 7px; background: rgba(10,9,8,0.85); color: var(--amber); border: 1px solid rgba(230,200,144,0.3); font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.08em; backdrop-filter: blur(4px); }
+  .card-badge.refine { color: var(--cyan); border-color: rgba(122,184,186,0.4); }
+  .card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,9,8,0.95) 0%, rgba(10,9,8,0.3) 50%, transparent 100%); opacity: 0; transition: opacity 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
+  .card:hover .card-overlay { opacity: 1; }
+  @media (pointer: coarse) { .card-overlay { opacity: 1; background: linear-gradient(to top, rgba(10,9,8,0.85) 0%, transparent 40%); } }
+  .card-prompt { font-size: 10px; color: #ddd6c8; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 6px; }
+  .card-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+  .card-action { width: 26px; height: 26px; background: rgba(20,17,15,0.9); border: none; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; }
+  .card-action:hover { background: var(--amber); color: #1a1612; }
+  .card-action.delete:hover { background: var(--red); color: #fff; }
+  .card-action.refine:hover { background: var(--cyan); color: #0a0908; }
+  .card-action.edit-source:hover { background: var(--accent-2); color: #fff; }
+  .card-action.ref-add:hover { background: var(--violet); color: #fff; }
+  .card-action svg { width: 11px; height: 11px; }
+  .empty { grid-column: 1 / -1; padding: 60px 0; text-align: center; }
+  .empty-icon { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border: 1px solid var(--border); border-radius: 50%; margin-bottom: 16px; color: var(--text-4); }
+  .empty-icon svg { width: 18px; height: 18px; }
+  .empty p { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 20px; color: var(--text-3); }
+  .empty .hint { font-family: 'Manrope'; font-style: normal; font-size: 12px; color: var(--text-4); margin-top: 8px; }
+  footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--bg-3); display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-4); letter-spacing: 0.1em; flex-wrap: wrap; gap: 10px; }
+  footer .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Lightbox + Refine */
+  .lightbox { position: fixed; inset: 0; background: rgba(10,9,8,0.97); backdrop-filter: blur(14px); z-index: 100; display: flex; align-items: stretch; justify-content: center; animation: fadeIn 0.2s ease-out; overflow-y: auto; }
+  .lightbox-close { position: fixed; top: 16px; right: 16px; background: rgba(20,17,15,0.8); border: 1px solid var(--border); color: var(--text-2); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 110; transition: all 0.2s; }
+  .lightbox-close:hover { background: var(--bg-3); color: var(--text); border-color: var(--border-2); }
+  .lightbox-close svg { width: 20px; height: 20px; }
+  .lightbox-body { width: 100%; max-width: 1280px; padding: 56px 16px 40px; display: grid; grid-template-columns: 1fr; gap: 24px; align-content: start; }
+  @media (min-width: 900px) { .lightbox-body { grid-template-columns: 1.2fr 1fr; gap: 32px; padding: 40px 40px; align-items: start; align-content: start; } }
+  .lightbox-image-col { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+  .lightbox-image-col img { max-width: 100%; max-height: 65vh; object-fit: contain; box-shadow: 0 30px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(230,200,144,0.1); }
+  @media (min-width: 900px) { .lightbox-image-col img { max-height: 78vh; } }
+  .lightbox-meta-inline { width: 100%; max-width: 520px; text-align: center; }
+  .lightbox-meta-inline .prompt-text { color: #c8c0b2; font-size: 12px; line-height: 1.55; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .lightbox-meta-inline .info-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; font-size: 10px; color: var(--text-4); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+  .lightbox-meta-inline .info-row .sep { color: var(--border-2); }
+  .lightbox-meta-inline .source-link { color: var(--cyan); text-decoration: none; cursor: pointer; border: 1px solid rgba(122,184,186,0.3); padding: 2px 8px; transition: all 0.15s; }
+  .lightbox-meta-inline .source-link:hover { border-color: var(--cyan); background: rgba(122,184,186,0.08); }
+  .lightbox-actions-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .lb-action { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: transparent; border: 1px solid var(--border-2); color: var(--text-2); font-family: inherit; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .lb-action:hover { color: var(--amber); border-color: var(--amber-dim); }
+  .lb-action svg { width: 12px; height: 12px; }
+  .lb-action.primary { background: rgba(230,200,144,0.08); color: var(--amber); border-color: var(--amber-dim); }
+  .refine-panel { background: rgba(20,17,15,0.75); border: 1px solid rgba(122,184,186,0.2); padding: 22px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 18px; position: sticky; top: 40px; }
+  .refine-panel-header { display: flex; align-items: baseline; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid rgba(122,184,186,0.15); }
+  .refine-panel-header h3 { font-family: 'Instrument Serif', serif; font-size: 24px; color: #e8e0d2; font-weight: 400; }
+  .refine-panel-header em { font-style: italic; color: var(--cyan); }
+  .refine-panel-header .kicker { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-4); letter-spacing: 0.2em; margin-left: auto; }
+  .refine-section-label { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-3); margin-bottom: 10px; }
+  .refine-section-label span.hint { color: var(--text-4); letter-spacing: 0.05em; text-transform: none; font-size: 10px; }
+  .preset-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  @media (min-width: 500px) { .preset-grid { grid-template-columns: repeat(3, 1fr); } }
+  .preset-chip { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: rgba(20,17,15,0.5); border: 1px solid var(--border); color: var(--text-2); cursor: pointer; font-family: inherit; font-size: 11px; text-align: left; transition: all 0.15s; line-height: 1.3; }
+  .preset-chip:hover:not(:disabled) { border-color: rgba(122,184,186,0.5); color: var(--text); background: rgba(122,184,186,0.06); }
+  .preset-chip:disabled { opacity: 0.4; cursor: not-allowed; }
+  .preset-chip .emoji { font-size: 13px; flex-shrink: 0; }
+  .preset-chip .label { flex: 1; min-width: 0; }
+  .preset-group { margin-bottom: 14px; }
+  .preset-group:last-of-type { margin-bottom: 0; }
+  .preset-group-title { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-4); margin-bottom: 6px; padding-left: 2px; }
+  .refine-custom-wrap { display: flex; flex-direction: column; gap: 10px; }
+  .refine-custom-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; font-family: 'Manrope', sans-serif; font-size: 13px; line-height: 1.55; outline: none; resize: vertical; min-height: 70px; transition: border-color 0.2s; }
+  .refine-custom-input:focus { border-color: rgba(122,184,186,0.5); }
+  .refine-custom-input::placeholder { color: var(--text-4); }
+  .refine-action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .refine-run-btn { flex: 1; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; background: var(--cyan); color: #0a0908; border: none; font-family: inherit; font-weight: 600; font-size: 13px; letter-spacing: 0.04em; cursor: pointer; transition: all 0.2s; }
+  .refine-run-btn:hover:not(:disabled) { background: #8fc9cb; transform: translateY(-1px); }
+  .refine-run-btn:disabled { background: var(--bg-3); color: var(--text-4); cursor: not-allowed; }
+  .refine-run-btn svg { width: 14px; height: 14px; }
+  .refine-model-select { padding: 8px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text-2); font-family: 'JetBrains Mono', monospace; font-size: 10px; outline: none; cursor: pointer; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23a8a098' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 28px; }
+  .refine-status { padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; border: 1px solid; }
+  .refine-status.working { color: var(--cyan); border-color: rgba(122,184,186,0.3); background: rgba(122,184,186,0.05); display: flex; align-items: center; gap: 8px; }
+  .refine-status.error { color: #f0a8a8; border-color: rgba(180,60,60,0.5); background: var(--red-bg); }
+  .refine-status.success { color: var(--green); border-color: rgba(138,186,122,0.3); background: rgba(138,186,122,0.05); }
+
+  .hidden { display: none !important; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<!-- ================ LOCK SCREEN (shown only in team mode when locked) ================ -->
+<div class="lock-screen hidden" id="lock-screen">
+  <div class="lock-card">
+    <div class="lock-eyebrow">Team Edition</div>
+    <h2 class="lock-title">The <em>Darkroom</em></h2>
+    <p class="lock-subtitle">Aaron's Studio</p>
+    <div class="lock-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    </div>
+    <form id="unlock-form">
+      <div class="lock-input-wrap">
+        <div class="input-wrap">
+          <input type="password" id="unlock-pw" placeholder="팀 비밀번호" autocomplete="current-password" autofocus />
+        </div>
+      </div>
+      <label class="lock-remember">
+        <input type="checkbox" id="unlock-remember" />
+        이 브라우저에 기억
+      </label>
+      <div class="lock-error hidden" id="unlock-error"></div>
+      <button class="lock-unlock-btn" type="submit" id="unlock-btn">
+        <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></span>
+        <span id="unlock-btn-text">잠금 해제</span>
+      </button>
+    </form>
+    <div class="lock-footer">
+      Aaron이 설정한 팀용 버전입니다.<br/>
+      비밀번호를 받지 못하셨다면 Aaron에게 문의하세요.
+    </div>
+  </div>
+</div>
+
+<div class="container" id="main-container">
+  <header class="header">
+    <div>
+      <div class="eyebrow">Gemini Nano Banana · Aaron's Studio<span id="team-badge-wrap"></span></div>
+      <h1>The <em>Darkroom</em> <span class="version">v0.9</span></h1>
+      <p class="lead" id="lead-text">생성 · 편집 · 빠른 수정까지 한 창에서.<br/>마음에 안 드는 부분만 콕 짚어서 다듬으세요.</p>
+    </div>
+    <button class="icon-btn" id="settings-btn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </header>
+
+  <div class="settings hidden" id="settings-panel">
+    <div class="settings-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>API & 설정</div>
+
+    <!-- Admin-only: personal API key input -->
+    <div class="field" id="personal-key-field">
+      <label>Gemini API Key</label>
+      <div class="input-wrap">
+        <input type="password" id="api-key" placeholder="AIza..." autocomplete="off" />
+        <button id="toggle-key-vis" type="button"><svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <div class="field-hint">
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com에서 발급 →</a>
+        <label class="checkbox-label"><input type="checkbox" id="save-key" />이 브라우저에 저장</label>
+      </div>
+    </div>
+
+    <!-- Team mode: status + relock -->
+    <div class="field hidden" id="team-status-field">
+      <label>Team API Key</label>
+      <div style="padding: 10px 12px; background: var(--bg); border: 1px solid rgba(138,186,122,0.3); color: var(--green); font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; gap: 8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M20 6L9 17l-5-5"/></svg>
+        잠금 해제됨 — Aaron이 제공한 키 사용 중
+      </div>
+      <button class="team-relock" id="relock-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        다시 잠그기 (저장된 비밀번호 삭제)
+      </button>
+    </div>
+
+    <!-- ADMIN ONLY: Team Deploy Section -->
+    <div class="admin-section" id="admin-section">
+      <div class="admin-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        팀 배포용 버전 만들기
+      </div>
+
+      <div class="field">
+        <label>팀 비밀번호 설정</label>
+        <div class="input-wrap">
+          <input type="text" id="team-pw-input" placeholder="팀원과 공유할 비밀번호 (16자+ 권장)" autocomplete="off" />
+        </div>
+        <p class="field-desc">이 비밀번호로 API 키가 암호화됩니다. 강력할수록 좋습니다.</p>
+      </div>
+
+      <button class="admin-deploy-btn" id="admin-deploy-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span id="admin-deploy-btn-text">팀 버전 HTML 다운로드</span>
+      </button>
+      <div class="admin-success hidden" id="admin-success"></div>
+
+      <div class="admin-warning">
+        <strong>⚠️ 배포 전 꼭 하세요:</strong><br/>
+        1. Google Cloud Console → APIs & Services → Credentials → 해당 키 → <strong>Quotas에서 일일 한도 설정</strong> (예: $5/일)<br/>
+        2. 파일을 공개 링크(Slack 채널 외부, 공용 Drive 공유 링크 등)에 올리지 마세요. 팀 내부 DM 또는 권한 제한된 폴더로만.<br/>
+        3. 키가 유출된 것으로 의심되면 즉시 Google Cloud Console에서 해당 키를 삭제·재발급하세요.
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabs-nav">
+    <button class="tab active" data-tab="series">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span class="tab-label">Series Studio</span><span class="tab-num">A</span>
+    </button>
+    <button class="tab" data-tab="editor">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span class="tab-label">Image Editor</span><span class="tab-num">B</span>
+    </button>
+  </nav>
+
+  <!-- PANEL A -->
+  <section class="panel active" id="panel-series">
+    <div class="panel-grid">
+      <div>
+        <h3 class="panel-section-title"><span class="num">01 /</span> 프로젝트</h3>
+        <div class="field">
+          <div class="field-head">
+            <label>주제 / 제품</label>
+            <button class="ghost-btn" id="brainstorm-concepts-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6l3 7-6 13L3 9z"/></svg>
+              <span id="brainstorm-btn-text">컨셉 아이디어</span>
+            </button>
+          </div>
+          <textarea id="series-topic" rows="2" placeholder="예) 마차 쿠션 콤팩트 — 20대 여성 타겟"></textarea>
+        </div>
+        <div id="brainstorm-panel" class="concept-panel hidden">
+          <div class="concept-panel-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg><span>카드를 클릭해 적용</span></div>
+          <div class="concept-cards" id="concept-cards"></div>
+        </div>
+        <div class="field">
+          <label>스타일 가이드</label>
+          <textarea id="series-style" rows="3" placeholder="예) Soft pastel palette, warm natural lighting"></textarea>
+        </div>
+        <h3 class="panel-section-title" style="margin-top: 28px;"><span class="num">02 /</span> 비율 & 사이즈</h3>
+        <div class="field">
+          <div class="preset-mode-tabs">
+            <button class="preset-mode-tab active" data-preset-mode="ratio" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/></svg>
+              비율
+            </button>
+            <button class="preset-mode-tab" data-preset-mode="platform" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              플랫폼
+            </button>
+          </div>
+          <div id="ratio-preset-pane">
+            <div class="chip-row" id="ratio-chips">
+              <button class="chip active" data-ratio="1:1" data-w="1080" data-h="1080"><span class="chip-ratio">1:1</span><span class="chip-desc">카드뉴스</span></button>
+              <button class="chip" data-ratio="9:16" data-w="1080" data-h="1920"><span class="chip-ratio">9:16</span><span class="chip-desc">스토리</span></button>
+              <button class="chip" data-ratio="3:4" data-w="1080" data-h="1440"><span class="chip-ratio">3:4</span><span class="chip-desc">인스타세로</span></button>
+              <button class="chip" data-ratio="2:3" data-w="860" data-h="1290"><span class="chip-ratio">2:3</span><span class="chip-desc">상세페이지</span></button>
+              <button class="chip" data-ratio="4:5" data-w="1080" data-h="1350"><span class="chip-ratio">4:5</span><span class="chip-desc">피드</span></button>
+              <button class="chip" data-ratio="16:9" data-w="1920" data-h="1080"><span class="chip-ratio">16:9</span><span class="chip-desc">와이드</span></button>
+            </div>
+          </div>
+          <div id="platform-preset-pane" class="hidden">
+            <div class="platform-grid" id="platform-chips"></div>
+            <div class="platform-note" id="platform-note-content"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>출력 픽셀 사이즈</label>
+          <div class="size-row">
+            <input type="number" class="num-input" id="out-w" value="1080" min="100" max="4096" />
+            <span class="x">×</span>
+            <input type="number" class="num-input" id="out-h" value="1080" min="100" max="4096" />
+            <span class="x">px</span>
+          </div>
+        </div>
+        <h3 class="panel-section-title" style="margin-top: 28px;"><span class="num">03 /</span> 참고 이미지 <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-4); letter-spacing: 0.1em; margin-left: 4px;">(선택)</span></h3>
+        <div class="field">
+          <div class="ref-strip" id="series-refs-strip"></div>
+          <p class="field-desc">최대 5장 · 모든 장 생성 시 참조.</p>
+          <input type="file" id="series-refs-input" accept="image/png,image/jpeg,image/webp" multiple style="display:none" />
+        </div>
+        <h3 class="panel-section-title" style="margin-top: 28px;"><span class="num">04 /</span> 모델</h3>
+        <div class="field">
+          <select id="series-model">
+            <option value="gemini-2.5-flash-image">Nano Banana · 장당 ~$0.039</option>
+            <option value="gemini-3-pro-image-preview">Nano Banana Pro · 장당 ~$0.134</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <h3 class="panel-section-title"><span class="num">05 /</span> 장 구성
+          <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-4); letter-spacing: 0.1em;" id="slot-count-label">5 SLOTS</span>
+        </h3>
+        <div class="count-group" style="margin-bottom: 12px;">
+          <span style="font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-3);">장 수</span>
+          <div class="count-buttons" id="slot-count-buttons">
+            <button class="count-btn" data-n="1">1</button>
+            <button class="count-btn" data-n="3">3</button>
+            <button class="count-btn active" data-n="5">5</button>
+            <button class="count-btn" data-n="7">7</button>
+            <button class="count-btn" data-n="10">10</button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+          <button class="ghost-btn" id="auto-fill-all-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/></svg>
+            <span id="auto-fill-btn-text">전체 AI 자동 작성</span>
+          </button>
+          <button class="secondary-btn" id="fill-template-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            카드뉴스 템플릿
+          </button>
+        </div>
+        <div class="slots-list" id="slots-list"></div>
+        <div style="margin-top: 20px;">
+          <button class="primary-btn" id="series-generate-btn">
+            <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4V2m0 14v-2M8 9h2M20 9h2M17.8 11.8L19 13M15 9h0M17.8 6.2L19 5M3 21l9-9M12.2 6.2L11 5"/></svg></span>
+            <span id="series-btn-text">시리즈 생성</span>
+          </button>
+          <div class="error hidden" id="series-error"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL B -->
+  <section class="panel" id="panel-editor">
+    <!-- Subtabs: AI 편집 / 크롭만 -->
+    <div class="editor-subtabs">
+      <button class="editor-subtab active" data-editor-mode="ai" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        AI 편집
+      </button>
+      <button class="editor-subtab" data-editor-mode="crop" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
+        크롭만 (무료·무손실)
+      </button>
+    </div>
+
+    <div class="panel-grid">
+      <!-- LEFT: shared upload + conditional refs -->
+      <div>
+        <h3 class="panel-section-title"><span class="num">01 /</span> 원본 이미지</h3>
+        <div id="upload-container">
+          <div class="upload-zone" id="upload-zone">
+            <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+            <p>클릭하거나 파일을 끌어놓으세요</p>
+            <p class="hint">PNG · JPG · WebP — 최대 20MB</p>
+            <input type="file" id="file-input" accept="image/png,image/jpeg,image/webp" style="display:none" />
+          </div>
+        </div>
+        <!-- 참고 이미지 — AI 편집 모드에서만 -->
+        <div id="editor-ai-left-extra">
+          <h3 class="panel-section-title" style="margin-top: 28px;"><span class="num">02 /</span> 참고 이미지 <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-4); letter-spacing: 0.1em; margin-left: 4px;">(선택)</span></h3>
+          <div class="field">
+            <div class="ref-strip" id="editor-refs-strip"></div>
+            <p class="field-desc">스타일 가이드용 참고 이미지 (최대 5장).</p>
+            <input type="file" id="editor-refs-input" accept="image/png,image/jpeg,image/webp" multiple style="display:none" />
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: mode-specific panels -->
+      <div>
+        <!-- AI 편집 모드 -->
+        <div id="editor-ai-pane">
+          <div class="field-head">
+            <h3 class="panel-section-title" style="margin: 0;"><span class="num">03 /</span> 편집 지시</h3>
+            <button class="ghost-btn" id="edit-ideas-btn" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6l3 7-6 13L3 9z"/></svg>
+              <span id="edit-ideas-btn-text">편집 아이디어</span>
+            </button>
+          </div>
+          <div class="field" style="margin-top: 14px;">
+            <textarea id="edit-prompt" rows="4" placeholder="예) 배경을 깨끗한 화이트로 바꿔주세요."></textarea>
+          </div>
+          <div id="edit-ideas-panel" class="concept-panel hidden">
+            <div class="concept-panel-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg><span>카드를 클릭해 적용</span></div>
+            <div class="concept-cards" id="edit-ideas-cards"></div>
+          </div>
+          <h3 class="panel-section-title" style="margin-top: 28px;"><span class="num">04 /</span> 모델</h3>
+          <div class="field">
+            <select id="edit-model">
+              <option value="gemini-3-pro-image-preview">Nano Banana Pro · ~$0.134</option>
+              <option value="gemini-2.5-flash-image">Nano Banana · ~$0.039</option>
+            </select>
+          </div>
+          <div style="margin-top: 20px;">
+            <button class="primary-btn" id="editor-generate-btn" disabled>
+              <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
+              <span id="editor-btn-text">편집 실행</span>
+            </button>
+            <div class="error hidden" id="editor-error"></div>
+          </div>
+        </div>
+
+        <!-- 크롭만 모드 -->
+        <div id="editor-crop-pane" class="hidden">
+          <h3 class="panel-section-title"><span class="num">02 /</span> 플랫폼 선택
+            <span style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-4); letter-spacing: 0.2em;">AI 사용 안 함 · 무료 · 무손실</span>
+          </h3>
+          <p class="field-desc" style="margin-bottom: 12px;">여러 플랫폼을 동시에 선택하면 각 사이즈로 중앙 크롭(center crop)하여 갤러리에 일괄 저장됩니다.</p>
+
+          <div class="crop-mode-selector" id="crop-mode-selector">
+            <label class="crop-mode-option selected" data-crop-mode="exact">
+              <input type="radio" name="crop-mode" value="exact" checked />
+              <span class="crop-mode-option-head">
+                <span class="crop-mode-option-dot"></span>
+                정확한 사이즈
+              </span>
+              <span class="crop-mode-option-desc">타겟 픽셀까지 리사이즈 · 플랫폼 규격 준수</span>
+            </label>
+            <label class="crop-mode-option" data-crop-mode="ratio">
+              <input type="radio" name="crop-mode" value="ratio" />
+              <span class="crop-mode-option-head">
+                <span class="crop-mode-option-dot"></span>
+                비율만 맞춤
+              </span>
+              <span class="crop-mode-option-desc">자르기만 · 원본 해상도 유지 (고화질 보관용)</span>
+            </label>
+          </div>
+
+          <div class="crop-select-toolbar">
+            <span class="crop-count-text"><strong id="crop-count-num">0</strong>/<span id="crop-count-total">14</span> 선택됨</span>
+            <div class="crop-mini-btn-group">
+              <button class="crop-mini-btn" id="crop-select-commerce" type="button">커머스</button>
+              <button class="crop-mini-btn" id="crop-select-sns" type="button">SNS</button>
+              <button class="crop-mini-btn" id="crop-select-all" type="button">전체</button>
+              <button class="crop-mini-btn" id="crop-select-none" type="button">해제</button>
+            </div>
+          </div>
+
+          <div class="crop-custom-add">
+            <div class="crop-custom-add-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="14 2 18 6 7 17 3 17 3 13 14 2"/><line x1="3" y1="22" x2="21" y2="22"/></svg>
+              커스텀 사이즈 추가
+            </div>
+            <div class="crop-custom-inputs">
+              <input type="number" id="crop-custom-w" placeholder="가로" min="50" max="4096" />
+              <span class="crop-custom-x">×</span>
+              <input type="number" id="crop-custom-h" placeholder="세로" min="50" max="4096" />
+              <input type="text" id="crop-custom-name" placeholder="이름 (선택)" maxlength="24" />
+              <button class="crop-custom-add-btn" id="crop-custom-add-btn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                추가
+              </button>
+            </div>
+            <p class="crop-custom-hint">50–4096px 범위 · 추가한 사이즈는 브라우저에 저장되어 다음에도 사용 가능합니다.</p>
+          </div>
+
+          <div class="crop-platform-list" id="crop-platform-list"></div>
+
+          <div style="margin-top: 20px;">
+            <button class="primary-btn" id="crop-run-btn" disabled>
+              <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg></span>
+              <span id="crop-run-btn-text">일괄 크롭 실행</span>
+            </button>
+            <div class="error hidden" id="crop-error"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="gallery-section">
+    <div class="gallery-header">
+      <div class="gallery-title">
+        <h2>Gallery</h2>
+        <span class="gallery-count" id="gallery-count">0 PRINTS</span>
+        <div class="gallery-filters" id="gallery-filters">
+          <button class="gallery-filter active" data-filter="all">ALL</button>
+          <button class="gallery-filter" data-filter="series">SERIES</button>
+          <button class="gallery-filter" data-filter="edit">EDIT</button>
+          <button class="gallery-filter" data-filter="refine">REFINE</button>
+          <button class="gallery-filter" data-filter="crop">CROP</button>
+        </div>
+      </div>
+      <button class="clear-btn hidden" id="clear-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        <span id="clear-btn-text">모두 비우기</span>
+      </button>
+    </div>
+    <div class="grid" id="gallery-grid">
+      <div class="empty" id="empty-state">
+        <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+        <p>the darkroom awaits</p>
+        <p class="hint">시리즈 · 편집 · 결과물 클릭으로 refine까지</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span id="footer-left">BUILT FOR AARON · NANO BANANA × TEAM EDITION</span>
+    <span class="mono">v0.9</span>
+  </footer>
+</div>
+
+<div class="lightbox hidden" id="lightbox">
+  <button class="lightbox-close" id="lightbox-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="lightbox-body" id="lightbox-body"></div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ==========================================================================
+  // TEAM DISTRIBUTION: this constant is replaced when Aaron exports team build
+  // When null → admin/personal mode (direct API key input)
+  // When { ct, salt, iv } → team mode (password-gated)
+  // ==========================================================================
+  const TEAM_ENCRYPTED_KEY = null;
+
+  // ============ CONSTANTS ============
+  const CARDNEWS_TEMPLATE = [
+    '제목장 (hook): {topic}의 핵심 메시지를 큰 타이포를 위한 여백 많은 배경 이미지',
+    '문제 제기: 타겟 고객이 겪는 불편·니즈를 시각화한 장면',
+    '해결 소개: 제품이 자연스럽게 등장하는 라이프스타일 컷',
+    '혜택 1: 첫 번째 핵심 베네핏을 클로즈업·디테일 컷으로',
+    '혜택 2: 두 번째 핵심 베네핏 (질감·성분·사용감)',
+    '사용 장면: 실제 사용하는 일상 순간, 자연광',
+    '후기·신뢰 요소 배경: 차분한 배경 이미지',
+    '비교/차별점: 기존 제품과의 차이를 암시하는 대비 구성',
+    'CTA 직전: 기대감을 높이는 무드 컷',
+    'CTA: 깨끗하고 임팩트 있는 제품 히어로 샷'
+  ];
+  const TEXT_MODEL = 'gemini-2.5-flash';
+  const MAX_REFS = 5;
+  const PBKDF2_ITERATIONS = 150000;
+
+  // Platform-specific preset library. Each entry: { id, emoji, name, ratio, w, h, note, estimated? }
+  // Sources documented inline. "estimated: true" means the spec isn't publicly confirmed.
+  const PLATFORM_PRESETS = [
+    // === 국내 커머스 플랫폼 ===
+    { id: 'oliveyoung', category: 'commerce', emoji: '🛍️', name: '올리브영 대표이미지', ratio: '1:1', w: 1000, h: 1000,
+      estimated: true,
+      note: '올리브영 공식 입점 스펙은 파트너 전용 자료로 공개 확인 불가. 실제 온라인몰이 1:1 정사각 표시이므로 업계 표준 1000×1000으로 설정 (추정치). 정확한 수치는 파트너 센터에서 확인 필요.' },
+    { id: 'coupang-main', category: 'commerce', emoji: '🛒', name: '쿠팡 대표이미지', ratio: '1:1', w: 1000, h: 1000,
+      note: '쿠팡 공식 기준: 최소 1000×1000, 정사각 필수. 배경 흰색(#FFFFFF) 강제, 이미지 내 텍스트·로고·할인 문구 금지 (2025년 정책).' },
+    { id: 'coupang-detail', category: 'commerce', emoji: '📋', name: '쿠팡 상세페이지', ratio: '2:3', w: 780, h: 1170,
+      note: '쿠팡 상세페이지 권장 가로 780px. 세로는 한 장 최대 3000px. GIF 불가.' },
+    { id: 'smartstore-main', category: 'commerce', emoji: '🟢', name: '네이버 스마트스토어', ratio: '1:1', w: 1300, h: 1300,
+      note: '네이버 스마트스토어 대표이미지: 가로 1300px 이상 권장, 1:1 정방향. 최소 160×160.' },
+    { id: 'smartstore-detail', category: 'commerce', emoji: '📄', name: '스마트스토어 상세', ratio: '2:3', w: 860, h: 1290,
+      note: '스마트스토어 상세페이지 권장 가로 860px, 세로는 한 장 5000px 이하.' },
+    { id: '11st', category: 'commerce', emoji: '1️⃣1️⃣', name: '11번가 대표이미지', ratio: '1:1', w: 1000, h: 1000,
+      note: '11번가는 1000×1000 이상 업로드 시 확대 미리보기 지원. 최소는 더 작지만 품질 위해 1000 권장.' },
+    { id: 'gmarket', category: 'commerce', emoji: '📦', name: 'G마켓/옥션', ratio: '1:1', w: 1000, h: 1000,
+      note: 'G마켓·옥션 상세페이지 권장 가로 860px, 대표이미지 1:1 1000×1000 권장.' },
+
+    // === SNS / 콘텐츠 플랫폼 ===
+    { id: 'youtube', category: 'sns', emoji: '🎥', name: '유튜브 썸네일', ratio: '16:9', w: 1280, h: 720,
+      note: 'YouTube 공식 권장: 1280×720 (16:9), 최소 640px 가로, 2MB 이하 JPG/PNG.' },
+    { id: 'insta-feed', category: 'sns', emoji: '📸', name: '인스타 피드 (정방)', ratio: '1:1', w: 1080, h: 1080,
+      note: 'Instagram 피드 1:1 게시물 표준. 그리드 썸네일도 1:1로 크롭됨.' },
+    { id: 'insta-portrait', category: 'sns', emoji: '📱', name: '인스타 피드 (세로)', ratio: '4:5', w: 1080, h: 1350,
+      note: 'Instagram 4:5 세로 포스트. 피드 스크롤 시 가장 큰 영역 차지, 참여율 가장 높음.' },
+    { id: 'insta-story', category: 'sns', emoji: '💫', name: '인스타 스토리/릴스', ratio: '9:16', w: 1080, h: 1920,
+      note: 'Instagram Stories / Reels 표준 9:16 풀스크린.' },
+    { id: 'naver-blog', category: 'sns', emoji: '📰', name: '네이버 블로그 대표', ratio: '40:21', w: 1200, h: 630,
+      note: '네이버 블로그 OG 이미지 / 대표 이미지. OpenGraph 표준 1200×630.' },
+    { id: 'kakao-ch', category: 'sns', emoji: '💬', name: '카카오톡 채널', ratio: '1:1', w: 1080, h: 1080,
+      note: '카카오톡 채널 메시지 이미지 1:1 표준.' },
+    { id: 'facebook-ad', category: 'sns', emoji: '📘', name: '페이스북 광고', ratio: '40:21', w: 1200, h: 628,
+      note: 'Facebook 피드 광고 / 링크 포스트 표준 1200×628.' },
+  ];
+
+
+  const REFINE_PRESETS = [
+    { title: 'STYLE / 질감', items: [
+      { emoji: '📷', label: '더 사진처럼', prompt: '이미지를 더 사실적인 사진(photorealistic)으로 바꿔주세요. DSLR 카메라로 촬영한 것 같은 자연스러운 디테일, 실제 피사체의 질감, 자연광, 실제 그림자를 살려주세요. 일러스트·CG 느낌을 없애주세요.' },
+      { emoji: '🎨', label: '더 일러스트처럼', prompt: '이미지를 손으로 그린 일러스트 스타일로 바꿔주세요. 부드러운 붓 터치, 양식화된 구성, 미세한 텍스처를 더해 사진이 아닌 그림의 느낌으로 만들어주세요.' },
+      { emoji: '🎬', label: '시네마틱', prompt: '시네마틱한 느낌으로 바꿔주세요. 영화적 조명, 얕은 피사계 심도, 은은한 필름 그레인, 드라마틱한 분위기.' },
+      { emoji: '📼', label: '빈티지 필름', prompt: '빈티지 필름 사진 룩으로 바꿔주세요. 살짝 바랜 컬러, 필름 그레인, 부드러운 콘트라스트, 노스탤지아한 분위기 (35mm 코닥 포트라 느낌).' },
+      { emoji: '🖌️', label: '수채화', prompt: '수채화 일러스트 스타일로 바꿔주세요. 번지는 색감, 부드러운 경계, 종이 질감을 살려주세요.' },
+      { emoji: '✏️', label: '라인 드로잉', prompt: '깔끔한 라인 드로잉 스타일로 바꿔주세요. 최소한의 색, 명료한 윤곽선 위주.' },
+    ]},
+    { title: 'TONE / 색감', items: [
+      { emoji: '☀️', label: '더 밝게', prompt: '전반적으로 밝고 에어리한 톤으로 바꿔주세요. 자연광이 풍부하고 밝은 느낌.' },
+      { emoji: '🌙', label: '더 어둡게', prompt: '더 어둡고 무드있게 바꿔주세요. 깊은 그림자, 드라마틱한 콘트라스트.' },
+      { emoji: '🔥', label: '따뜻한 톤', prompt: '색감을 따뜻한 톤으로 바꿔주세요. 골든아워의 황금빛, 호박색, 따뜻한 피부톤.' },
+      { emoji: '❄️', label: '차가운 톤', prompt: '색감을 차가운 톤으로 바꿔주세요. 블루-그린 계열, 시원하고 청량한 느낌.' },
+      { emoji: '🌸', label: '파스텔', prompt: '파스텔 톤으로 바꿔주세요. 채도를 낮추고 부드러운 크림·핑크·라벤더 계열로.' },
+      { emoji: '✨', label: '채도/선명도 UP', prompt: '색이 선명하고 또렷하게, 콘트라스트와 채도를 높여 주세요 (과하지 않게).' },
+    ]},
+    { title: 'COMPOSITION / 구도', items: [
+      { emoji: '🎯', label: '제품 강조', prompt: '제품을 더 크고 눈에 띄게, 히어로처럼 강조해주세요. 주변 요소는 보조적으로.' },
+      { emoji: '🌿', label: '배경 정돈', prompt: '배경을 깔끔하게 정돈해주세요. 불필요한 요소를 최소화하고 제품에 집중되도록.' },
+      { emoji: '📐', label: '여백 UP', prompt: '여백(네거티브 스페이스)을 더 많이 두어, 텍스트나 카피를 얹을 공간이 확보되게 해주세요.' },
+      { emoji: '🔄', label: '같은 톤, 다른 구도', prompt: '동일한 스타일·분위기·색감을 유지하면서 구도만 다르게, 새로운 버전을 만들어주세요.' },
+      { emoji: '🔍', label: '클로즈업', prompt: '주요 피사체에 더 가까이 다가간 클로즈업 구성으로 바꿔주세요.' },
+      { emoji: '🪟', label: '와이드샷', prompt: '카메라를 뒤로 빼서 더 넓게, 맥락이 보이는 와이드 구성으로 바꿔주세요.' },
+    ]},
+    { title: 'FEEL / 인상', items: [
+      { emoji: '💎', label: '더 프리미엄', prompt: '더 고급스럽고 프리미엄한 느낌으로. 세련된 조명, 디테일한 질감, 미니멀한 럭셔리 감성.' },
+      { emoji: '🏡', label: '더 편안하게', prompt: '더 편안하고 친근한 느낌으로. 생활감 있는 따뜻한 분위기, 자연스러운 라이프스타일 톤.' },
+      { emoji: '🎨', label: '더 예술적', prompt: '더 예술적이고 창의적인 구성으로. 독특한 앵글, 감각적인 색감 배치.' },
+      { emoji: '🧊', label: '더 미니멀', prompt: '더 미니멀하고 정돈된 느낌으로. 색·요소를 줄이고 여백과 구도만으로 전달.' },
+    ]},
+  ];
+
+  // ============ STATE ============
+  const state = {
+    apiKey: '', saveKey: false,
+    teamMode: TEAM_ENCRYPTED_KEY !== null,
+    unlocked: TEAM_ENCRYPTED_KEY === null,
+    currentTab: 'series',
+    presetMode: 'ratio', selectedPlatform: null,
+    slotCount: 5, slotPrompts: ['', '', '', '', ''],
+    ratio: '1:1', outW: 1080, outH: 1080,
+    seriesModel: 'gemini-2.5-flash-image', seriesLoading: false,
+    seriesRefs: [], concepts: null,
+    editSource: null, editSourceDim: null, editRefs: [],
+    editorMode: 'ai', cropSelectedPlatforms: new Set(), customCrops: [], cropMode: 'exact',
+    editModel: 'gemini-3-pro-image-preview', editorLoading: false, editIdeas: null,
+    gallery: [], galleryFilter: 'all',
+    confirmClear: false, confirmTimer: null,
+    lightbox: { imageId: null, refineModel: 'gemini-3-pro-image-preview', working: false },
+  };
+
+  // ============ HELPERS ============
+  const $ = (id) => document.getElementById(id);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const LS = {
+    get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+    del: (k) => { try { localStorage.removeItem(k); } catch {} },
+  };
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ data: reader.result.split(',')[1], mimeType: file.type || 'image/png', name: file.name });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  function getImageDims(base64Data, mimeType) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve({ w: 0, h: 0 });
+      img.src = `data:${mimeType};base64,${base64Data}`;
+    });
+  }
+  function resizeAndCrop(base64Data, mimeType, targetW, targetH) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW; canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        const srcAR = img.width / img.height, tgtAR = targetW / targetH;
+        let sx, sy, sw, sh;
+        if (srcAR > tgtAR) { sh = img.height; sw = img.height * tgtAR; sx = (img.width - sw) / 2; sy = 0; }
+        else { sw = img.width; sh = img.width / tgtAR; sx = 0; sy = (img.height - sh) / 2; }
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+        const dataUrl = canvas.toDataURL('image/png');
+        resolve({ data: dataUrl.split(',')[1], mimeType: 'image/png' });
+      };
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.src = `data:${mimeType};base64,${base64Data}`;
+    });
+  }
+
+  // Crop to a target aspect ratio WITHOUT resizing (keeps maximum original resolution)
+  // ratioW/ratioH only define the ratio — actual output dims depend on source
+  function cropToRatio(base64Data, mimeType, ratioW, ratioH) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const srcW = img.naturalWidth;
+        const srcH = img.naturalHeight;
+        const srcAR = srcW / srcH;
+        const tgtAR = ratioW / ratioH;
+        let cropW, cropH, sx, sy;
+        if (Math.abs(srcAR - tgtAR) < 0.001) {
+          // Already matches ratio — no crop needed
+          cropW = srcW; cropH = srcH; sx = 0; sy = 0;
+        } else if (srcAR > tgtAR) {
+          // Source wider than target → trim sides
+          cropH = srcH;
+          cropW = Math.round(srcH * tgtAR);
+          sx = Math.round((srcW - cropW) / 2);
+          sy = 0;
+        } else {
+          // Source taller than target → trim top/bottom
+          cropW = srcW;
+          cropH = Math.round(srcW / tgtAR);
+          sx = 0;
+          sy = Math.round((srcH - cropH) / 2);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = cropW; canvas.height = cropH;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
+        const dataUrl = canvas.toDataURL('image/png');
+        resolve({ data: dataUrl.split(',')[1], mimeType: 'image/png', w: cropW, h: cropH });
+      };
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.src = `data:${mimeType};base64,${base64Data}`;
+    });
+  }
+
+  // ============ CRYPTO ============
+  function b64encode(bytes) { return btoa(String.fromCharCode.apply(null, bytes)); }
+  function b64decode(str) { return Uint8Array.from(atob(str), c => c.charCodeAt(0)); }
+
+  async function deriveAesKey(password, saltBytes) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false, ['encrypt', 'decrypt']
+    );
+  }
+
+  async function encryptString(plaintext, password) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveAesKey(password, salt);
+    const encoded = new TextEncoder().encode(plaintext);
+    const cipherBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+    return {
+      ct: b64encode(new Uint8Array(cipherBuffer)),
+      salt: b64encode(salt),
+      iv: b64encode(iv),
+    };
+  }
+
+  async function decryptString(payload, password) {
+    const salt = b64decode(payload.salt);
+    const iv = b64decode(payload.iv);
+    const ct = b64decode(payload.ct);
+    const key = await deriveAesKey(password, salt);
+    const plainBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+    return new TextDecoder().decode(plainBuffer);
+  }
+
+  // ============ ELEMENTS ============
+  const els = {
+    lockScreen: $('lock-screen'),
+    unlockForm: $('unlock-form'),
+    unlockPw: $('unlock-pw'),
+    unlockRemember: $('unlock-remember'),
+    unlockError: $('unlock-error'),
+    unlockBtn: $('unlock-btn'),
+    unlockBtnText: $('unlock-btn-text'),
+    mainContainer: $('main-container'),
+    teamBadgeWrap: $('team-badge-wrap'),
+    leadText: $('lead-text'),
+    footerLeft: $('footer-left'),
+    settingsBtn: $('settings-btn'), settingsPanel: $('settings-panel'),
+    personalKeyField: $('personal-key-field'),
+    teamStatusField: $('team-status-field'),
+    adminSection: $('admin-section'),
+    teamPwInput: $('team-pw-input'),
+    adminDeployBtn: $('admin-deploy-btn'),
+    adminDeployBtnText: $('admin-deploy-btn-text'),
+    adminSuccess: $('admin-success'),
+    relockBtn: $('relock-btn'),
+    apiKey: $('api-key'), toggleKeyVis: $('toggle-key-vis'), eyeIcon: $('eye-icon'), saveKey: $('save-key'),
+    tabs: $$('.tab'), panelSeries: $('panel-series'), panelEditor: $('panel-editor'),
+    seriesTopic: $('series-topic'), seriesStyle: $('series-style'),
+    brainstormConceptsBtn: $('brainstorm-concepts-btn'), brainstormBtnText: $('brainstorm-btn-text'),
+    brainstormPanel: $('brainstorm-panel'), conceptCards: $('concept-cards'),
+    ratioChips: $('ratio-chips'), outW: $('out-w'), outH: $('out-h'),
+    presetModeTabs: $$('.preset-mode-tab'),
+    ratioPresetPane: $('ratio-preset-pane'),
+    platformPresetPane: $('platform-preset-pane'),
+    platformChips: $('platform-chips'),
+    platformNoteContent: $('platform-note-content'),
+    seriesModel: $('series-model'),
+    slotCountButtons: $('slot-count-buttons'), slotCountLabel: $('slot-count-label'),
+    slotsList: $('slots-list'),
+    autoFillAllBtn: $('auto-fill-all-btn'), autoFillBtnText: $('auto-fill-btn-text'),
+    fillTemplateBtn: $('fill-template-btn'),
+    seriesGenerateBtn: $('series-generate-btn'), seriesBtnText: $('series-btn-text'), seriesError: $('series-error'),
+    seriesRefsStrip: $('series-refs-strip'), seriesRefsInput: $('series-refs-input'),
+    uploadContainer: $('upload-container'), uploadZone: $('upload-zone'), fileInput: $('file-input'),
+    editPrompt: $('edit-prompt'), editModel: $('edit-model'),
+    editorGenerateBtn: $('editor-generate-btn'), editorBtnText: $('editor-btn-text'), editorError: $('editor-error'),
+    editorRefsStrip: $('editor-refs-strip'), editorRefsInput: $('editor-refs-input'),
+    editIdeasBtn: $('edit-ideas-btn'), editIdeasBtnText: $('edit-ideas-btn-text'),
+    editIdeasPanel: $('edit-ideas-panel'), editIdeasCards: $('edit-ideas-cards'),
+    editorSubtabs: $$('.editor-subtab'),
+    editorAiPane: $('editor-ai-pane'),
+    editorCropPane: $('editor-crop-pane'),
+    editorAiLeftExtra: $('editor-ai-left-extra'),
+    cropPlatformList: $('crop-platform-list'),
+    cropCountNum: $('crop-count-num'),
+    cropCountTotal: $('crop-count-total'),
+    cropSelectAll: $('crop-select-all'),
+    cropSelectNone: $('crop-select-none'),
+    cropSelectCommerce: $('crop-select-commerce'),
+    cropSelectSns: $('crop-select-sns'),
+    cropRunBtn: $('crop-run-btn'),
+    cropRunBtnText: $('crop-run-btn-text'),
+    cropError: $('crop-error'),
+    cropCustomW: $('crop-custom-w'),
+    cropCustomH: $('crop-custom-h'),
+    cropCustomName: $('crop-custom-name'),
+    cropCustomAddBtn: $('crop-custom-add-btn'),
+    cropModeSelector: $('crop-mode-selector'),
+    gallery: $('gallery-grid'), galleryCount: $('gallery-count'), galleryFilters: $('gallery-filters'),
+    clearBtn: $('clear-btn'), clearBtnText: $('clear-btn-text'),
+    lightbox: $('lightbox'), lightboxClose: $('lightbox-close'), lightboxBody: $('lightbox-body'),
+  };
+
+  // ============ INIT (team-mode aware) ============
+  (async function init() {
+    if (state.teamMode) {
+      // TEAM MODE
+      els.personalKeyField.classList.add('hidden');
+      els.teamStatusField.classList.remove('hidden');
+      els.adminSection.classList.add('hidden');
+      els.teamBadgeWrap.innerHTML = `<span class="team-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>TEAM</span>`;
+      els.leadText.innerHTML = 'Aaron이 설정한 팀 버전.<br/>API 키는 이미 내장되어 있어요.';
+      els.footerLeft.textContent = "AARON'S STUDIO · TEAM EDITION";
+
+      const savedPw = LS.get('darkroom:teamPw');
+      if (savedPw) {
+        try {
+          state.apiKey = await decryptString(TEAM_ENCRYPTED_KEY, savedPw);
+          state.unlocked = true;
+          els.lockScreen.classList.add('hidden');
+        } catch (e) {
+          LS.del('darkroom:teamPw');
+          showLockScreen();
+        }
+      } else {
+        showLockScreen();
+      }
+    } else {
+      // PERSONAL/ADMIN MODE
+      els.personalKeyField.classList.remove('hidden');
+      els.teamStatusField.classList.add('hidden');
+      els.adminSection.classList.remove('hidden');
+      const k = LS.get('darkroom:apikey');
+      if (k) { state.apiKey = k; state.saveKey = true; els.apiKey.value = k; els.saveKey.checked = true; }
+    }
+
+    const sm = LS.get('darkroom:seriesModel'); if (sm) { state.seriesModel = sm; els.seriesModel.value = sm; }
+    const em = LS.get('darkroom:editModel'); if (em) { state.editModel = em; els.editModel.value = em; }
+    const rm = LS.get('darkroom:refineModel'); if (rm) state.lightbox.refineModel = rm;
+    const topic = LS.get('darkroom:topic'); if (topic) els.seriesTopic.value = topic;
+    const style = LS.get('darkroom:style'); if (style) els.seriesStyle.value = style;
+    const savedCustomCrops = LS.get('darkroom:customCrops');
+    if (savedCustomCrops) {
+      try { state.customCrops = JSON.parse(savedCustomCrops) || []; } catch {}
+    }
+    const savedCropMode = LS.get('darkroom:cropMode');
+    if (savedCropMode === 'ratio' || savedCropMode === 'exact') state.cropMode = savedCropMode;
+    renderSlots(); renderRefStrip('series'); renderRefStrip('editor');
+  })();
+
+  // ============ LOCK SCREEN ============
+  function showLockScreen() {
+    els.lockScreen.classList.remove('hidden');
+    setTimeout(() => els.unlockPw.focus(), 100);
+  }
+
+  els.unlockForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = els.unlockPw.value;
+    if (!pw) return;
+    const remember = els.unlockRemember.checked;
+
+    els.unlockBtn.disabled = true;
+    els.unlockBtnText.textContent = '확인 중…';
+    els.unlockError.classList.add('hidden');
+
+    try {
+      const decrypted = await decryptString(TEAM_ENCRYPTED_KEY, pw);
+      state.apiKey = decrypted;
+      state.unlocked = true;
+      if (remember) LS.set('darkroom:teamPw', pw);
+      els.lockScreen.classList.add('hidden');
+      els.unlockPw.value = '';
+    } catch (err) {
+      els.unlockError.textContent = '비밀번호가 틀렸습니다. Aaron에게 확인해주세요.';
+      els.unlockError.classList.remove('hidden');
+      els.unlockPw.value = '';
+      els.unlockPw.focus();
+    }
+    els.unlockBtn.disabled = false;
+    els.unlockBtnText.textContent = '잠금 해제';
+  });
+
+  // Relock
+  els.relockBtn.addEventListener('click', () => {
+    if (!confirm('저장된 비밀번호를 지우고 다시 잠글까요?\n(페이지가 새로고침됩니다)')) return;
+    LS.del('darkroom:teamPw');
+    location.reload();
+  });
+
+  // ============ ADMIN: TEAM DEPLOY ============
+  els.adminDeployBtn.addEventListener('click', async () => {
+    const apiKey = els.apiKey.value.trim();
+    const pw = els.teamPwInput.value;
+    if (!apiKey) { alert('먼저 API 키를 입력하세요 (위의 Gemini API Key 필드)'); return; }
+    if (!pw || pw.length < 4) { alert('팀 비밀번호를 입력하세요 (최소 4자, 16자 이상 권장)'); return; }
+
+    els.adminDeployBtn.disabled = true;
+    els.adminDeployBtnText.textContent = '암호화 중…';
+    els.adminSuccess.classList.add('hidden');
+
+    try {
+      const payload = await encryptString(apiKey, pw);
+      const payloadJson = JSON.stringify(payload);
+
+      // Grab current HTML and swap placeholder
+      const currentHtml = document.documentElement.outerHTML;
+      const pattern = /const TEAM_ENCRYPTED_KEY = null;/;
+      if (!pattern.test(currentHtml)) {
+        throw new Error('플레이스홀더를 찾을 수 없습니다 (HTML이 이미 빌드됨?)');
+      }
+      const newHtml = currentHtml.replace(pattern, `const TEAM_ENCRYPTED_KEY = ${payloadJson};`);
+      const fullHtml = '<!DOCTYPE html>\n' + newHtml;
+
+      // Download
+      const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ts = new Date().toISOString().slice(0, 10);
+      a.download = `darkroom-team-${ts}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      els.adminSuccess.innerHTML = `
+        ✓ <strong>darkroom-team-${ts}.html</strong> 다운로드 완료<br/>
+        이 파일과 비밀번호를 팀원에게 전달하세요.<br/>
+        <strong>⚠️ 비밀번호는 파일과 함께 보내지 말고 별도 경로로 공유하세요.</strong>
+      `;
+      els.adminSuccess.classList.remove('hidden');
+      els.teamPwInput.value = '';
+    } catch (e) {
+      alert('팀 버전 생성 실패: ' + (e.message || e));
+    }
+    els.adminDeployBtn.disabled = false;
+    els.adminDeployBtnText.textContent = '팀 버전 HTML 다운로드';
+  });
+
+  // ============ SETTINGS ============
+  els.settingsBtn.addEventListener('click', () => {
+    els.settingsPanel.classList.toggle('hidden');
+    els.settingsBtn.classList.toggle('active');
+  });
+  els.apiKey.addEventListener('input', (e) => {
+    state.apiKey = e.target.value;
+    if (state.saveKey && state.apiKey.trim().length > 10) LS.set('darkroom:apikey', state.apiKey.trim());
+    else if (!state.saveKey) LS.del('darkroom:apikey');
+  });
+  els.toggleKeyVis.addEventListener('click', () => {
+    const isPwd = els.apiKey.type === 'password';
+    els.apiKey.type = isPwd ? 'text' : 'password';
+    els.eyeIcon.innerHTML = isPwd
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  });
+  els.saveKey.addEventListener('change', (e) => {
+    state.saveKey = e.target.checked;
+    if (state.saveKey && state.apiKey.trim().length > 10) LS.set('darkroom:apikey', state.apiKey.trim());
+    else if (!state.saveKey) LS.del('darkroom:apikey');
+  });
+
+  els.tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      state.currentTab = target;
+      els.tabs.forEach(t => t.classList.toggle('active', t === tab));
+      els.panelSeries.classList.toggle('active', target === 'series');
+      els.panelEditor.classList.toggle('active', target === 'editor');
+    });
+  });
+
+  els.seriesTopic.addEventListener('input', (e) => LS.set('darkroom:topic', e.target.value));
+  els.seriesStyle.addEventListener('input', (e) => LS.set('darkroom:style', e.target.value));
+  els.seriesModel.addEventListener('change', (e) => { state.seriesModel = e.target.value; LS.set('darkroom:seriesModel', state.seriesModel); });
+  els.editModel.addEventListener('change', (e) => { state.editModel = e.target.value; LS.set('darkroom:editModel', state.editModel); });
+
+  els.ratioChips.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    els.ratioChips.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c === chip));
+    state.ratio = chip.dataset.ratio;
+    state.outW = parseInt(chip.dataset.w, 10); state.outH = parseInt(chip.dataset.h, 10);
+    els.outW.value = state.outW; els.outH.value = state.outH;
+    // clear platform selection since ratio was manually picked
+    state.selectedPlatform = null;
+    els.platformChips.querySelectorAll('.platform-chip').forEach(c => c.classList.remove('active'));
+    renderPlatformNote();
+  });
+
+  // Preset mode tabs (Ratio vs Platform)
+  els.presetModeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const mode = tab.dataset.presetMode;
+      state.presetMode = mode;
+      els.presetModeTabs.forEach(t => t.classList.toggle('active', t === tab));
+      els.ratioPresetPane.classList.toggle('hidden', mode !== 'ratio');
+      els.platformPresetPane.classList.toggle('hidden', mode !== 'platform');
+    });
+  });
+
+  // Render platform chips
+  function renderPlatformChips() {
+    els.platformChips.innerHTML = '';
+    PLATFORM_PRESETS.forEach(p => {
+      const chip = document.createElement('button');
+      chip.className = 'platform-chip';
+      chip.type = 'button';
+      chip.dataset.platformId = p.id;
+      const estBadge = p.estimated ? `<span class="platform-chip-badge">추정</span>` : '';
+      chip.innerHTML = `
+        <span class="platform-chip-emoji">${p.emoji}</span>
+        <span class="platform-chip-body">
+          <span class="platform-chip-name">${escapeHtml(p.name)}${estBadge}</span>
+          <span class="platform-chip-size">${p.w}×${p.h} · ${p.ratio}</span>
+        </span>
+      `;
+      chip.addEventListener('click', () => selectPlatform(p));
+      els.platformChips.appendChild(chip);
+    });
+    renderPlatformNote();
+  }
+
+  function selectPlatform(p) {
+    state.selectedPlatform = p.id;
+    state.ratio = p.ratio;
+    state.outW = p.w; state.outH = p.h;
+    els.outW.value = p.w; els.outH.value = p.h;
+    // visual feedback
+    els.platformChips.querySelectorAll('.platform-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.platformId === p.id);
+    });
+    // also sync ratio chip if any matches
+    els.ratioChips.querySelectorAll('.chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.ratio === p.ratio && parseInt(c.dataset.w, 10) === p.w && parseInt(c.dataset.h, 10) === p.h);
+    });
+    renderPlatformNote();
+  }
+
+  function renderPlatformNote() {
+    const p = PLATFORM_PRESETS.find(x => x.id === state.selectedPlatform);
+    if (!p) {
+      els.platformNoteContent.innerHTML = `<span style="color: var(--text-4);">플랫폼을 선택하면 권장 스펙과 주의사항이 여기 표시됩니다.</span>`;
+      return;
+    }
+    const estNote = p.estimated
+      ? `<br/><strong>⚠ 추정치:</strong> 올리브영은 공식 입점 스펙이 공개되지 않아 업계 표준으로 설정했어요. 정확한 규격은 올리브영 파트너 센터에서 확인해 주세요.`
+      : '';
+    els.platformNoteContent.innerHTML = `
+      <strong>${escapeHtml(p.name)}</strong> · ${p.w}×${p.h} (${p.ratio})<br/>
+      ${escapeHtml(p.note)}
+      ${estNote}
+    `;
+  }
+
+  renderPlatformChips();
+
+  els.outW.addEventListener('input', (e) => state.outW = parseInt(e.target.value, 10) || 1080);
+  els.outH.addEventListener('input', (e) => state.outH = parseInt(e.target.value, 10) || 1080);
+
+  els.slotCountButtons.addEventListener('click', (e) => {
+    const btn = e.target.closest('.count-btn');
+    if (!btn) return;
+    state.slotCount = parseInt(btn.dataset.n, 10);
+    els.slotCountButtons.querySelectorAll('.count-btn').forEach(b => b.classList.toggle('active', b === btn));
+    while (state.slotPrompts.length < state.slotCount) state.slotPrompts.push('');
+    state.slotPrompts = state.slotPrompts.slice(0, state.slotCount);
+    renderSlots();
+  });
+
+  function renderSlots() {
+    els.slotsList.innerHTML = '';
+    for (let i = 0; i < state.slotCount; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.innerHTML = `
+        <div class="slot-num">${i+1}</div>
+        <textarea rows="2" data-idx="${i}" placeholder="${i+1}번 장 프롬프트">${escapeHtml(state.slotPrompts[i] || '')}</textarea>
+        <div class="slot-tools">
+          <button class="slot-sparkle" data-idx="${i}" title="이 장 AI 아이디어">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 14v4M17 16h4M5 5v2M4 6h2"/></svg>
+          </button>
+          <div class="slot-status" data-idx="${i}"></div>
+        </div>
+      `;
+      els.slotsList.appendChild(slot);
+    }
+    els.slotsList.querySelectorAll('textarea').forEach(ta => {
+      ta.addEventListener('input', (e) => { state.slotPrompts[parseInt(e.target.dataset.idx, 10)] = e.target.value; });
+    });
+    els.slotsList.querySelectorAll('.slot-sparkle').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.preventDefault(); handleSlotIdea(parseInt(btn.dataset.idx, 10)); });
+    });
+    els.slotCountLabel.textContent = `${state.slotCount} ${state.slotCount === 1 ? 'SLOT' : 'SLOTS'}`;
+  }
+
+  function setSlotStatus(idx, status) {
+    const el = els.slotsList.querySelector(`.slot-status[data-idx="${idx}"]`);
+    if (!el) return;
+    el.className = 'slot-status ' + (status || '');
+    if (status === 'loading') el.innerHTML = '<div class="spinner" style="width:12px;height:12px;border-width:1.5px"></div>';
+    else if (status === 'done') el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+    else if (status === 'err') el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    else el.innerHTML = '';
+  }
+
+  function setSlotSparkleWorking(idx, working) {
+    const btn = els.slotsList.querySelector(`.slot-sparkle[data-idx="${idx}"]`);
+    if (!btn) return;
+    btn.disabled = working;
+    btn.innerHTML = working
+      ? '<div class="spinner" style="width:10px;height:10px;border-width:1.5px"></div>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/><path d="M19 14v4M17 16h4M5 5v2M4 6h2"/></svg>';
+  }
+
+  els.fillTemplateBtn.addEventListener('click', () => {
+    const topic = els.seriesTopic.value.trim() || '제품';
+    const tmpl = CARDNEWS_TEMPLATE.slice(0, state.slotCount);
+    state.slotPrompts = tmpl.map(t => t.replace('{topic}', topic));
+    renderSlots();
+  });
+
+  // REF STRIP
+  function renderRefStrip(kind) {
+    const strip = kind === 'series' ? els.seriesRefsStrip : els.editorRefsStrip;
+    const refs = kind === 'series' ? state.seriesRefs : state.editRefs;
+    const input = kind === 'series' ? els.seriesRefsInput : els.editorRefsInput;
+    strip.innerHTML = '';
+    refs.forEach((ref, idx) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'ref-thumb';
+      thumb.innerHTML = `
+        <img src="data:${ref.mimeType};base64,${ref.data}" alt="" />
+        <span class="ref-label">REF ${idx+1}</span>
+        <button class="ref-x" data-idx="${idx}" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      `;
+      thumb.querySelector('.ref-x').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const i = parseInt(e.currentTarget.dataset.idx, 10);
+        if (kind === 'series') state.seriesRefs.splice(i, 1);
+        else state.editRefs.splice(i, 1);
+        renderRefStrip(kind);
+      });
+      strip.appendChild(thumb);
+    });
+    if (refs.length < MAX_REFS) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'ref-add'; addBtn.type = 'button';
+      addBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>ADD</span>`;
+      addBtn.addEventListener('click', () => input.click());
+      strip.appendChild(addBtn);
+    }
+    if (refs.length === 0) {
+      const hint = document.createElement('span');
+      hint.className = 'ref-empty-hint';
+      hint.textContent = '참고 이미지 없음';
+      strip.appendChild(hint);
+    }
+  }
+
+  async function handleRefsUpload(files, kind) {
+    const refs = kind === 'series' ? state.seriesRefs : state.editRefs;
+    const available = MAX_REFS - refs.length;
+    const toAdd = Array.from(files).slice(0, available);
+    for (const file of toAdd) {
+      if (!file.type.startsWith('image/')) continue;
+      if (file.size > 20 * 1024 * 1024) { alert(`${file.name}: 20MB 초과`); continue; }
+      try { refs.push(await fileToBase64(file)); } catch (e) { console.error(e); }
+    }
+    renderRefStrip(kind);
+  }
+  els.seriesRefsInput.addEventListener('change', (e) => { handleRefsUpload(e.target.files, 'series'); e.target.value = ''; });
+  els.editorRefsInput.addEventListener('change', (e) => { handleRefsUpload(e.target.files, 'editor'); e.target.value = ''; });
+
+  [['series', els.seriesRefsStrip], ['editor', els.editorRefsStrip]].forEach(([kind, strip]) => {
+    ['dragenter', 'dragover'].forEach(ev => strip.addEventListener(ev, (e) => { e.preventDefault(); strip.style.borderColor = 'var(--amber-dim)'; }));
+    ['dragleave', 'drop'].forEach(ev => strip.addEventListener(ev, (e) => { e.preventDefault(); strip.style.borderColor = ''; }));
+    strip.addEventListener('drop', (e) => {
+      const files = e.dataTransfer?.files;
+      if (files && files.length) handleRefsUpload(files, kind);
+    });
+  });
+
+  // TEXT API
+  async function generateText({ prompt, apiKey, schema, images }) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${TEXT_MODEL}:generateContent`;
+    const parts = [];
+    if (images && images.length) for (const img of images) parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+    parts.push({ text: prompt });
+    const body = { contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } };
+    if (schema) body.generationConfig.responseSchema = schema;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      let msg = `HTTP ${response.status}`;
+      try { const err = await response.json(); msg = err?.error?.message || msg; } catch {}
+      throw new Error(msg);
+    }
+    const data = await response.json();
+    const candidate = data?.candidates?.[0];
+    if (!candidate) throw new Error('응답이 비어있습니다');
+    const textPart = candidate?.content?.parts?.find(p => p.text);
+    if (!textPart) throw new Error('텍스트 응답 없음');
+    try { return JSON.parse(textPart.text); }
+    catch { throw new Error('JSON 파싱 실패: ' + textPart.text.slice(0, 100)); }
+  }
+
+  // Brainstorm concepts
+  els.brainstormConceptsBtn.addEventListener('click', async () => {
+    const apiKey = state.apiKey.trim();
+    if (!apiKey) { alert('API 키가 없어요'); return; }
+    const topic = els.seriesTopic.value.trim();
+    if (!topic) { alert('먼저 주제/제품을 입력하세요'); return; }
+    els.brainstormConceptsBtn.disabled = true;
+    els.brainstormBtnText.textContent = '생각 중…';
+    els.brainstormPanel.classList.add('hidden');
+    try {
+      const schema = { type: 'object', properties: { concepts: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, mood: { type: 'string' }, style_guide: { type: 'string' } }, required: ['title','mood','style_guide'] } } }, required: ['concepts'] };
+      const refDesc = state.seriesRefs.length > 0 ? `\n(참고 이미지 ${state.seriesRefs.length}장 제공, 톤 반영)` : '';
+      const prompt = `당신은 한국 커머스 브랜드의 시각 디렉터입니다. 카드뉴스 또는 상세페이지 시리즈용 시각적 컨셉 3가지를 서로 뚜렷하게 다른 방향으로 제안하세요.\n\n주제/제품: ${topic}${refDesc}\n\n각 컨셉:\n- title: 한국어 12자 이내\n- mood: 영어 대문자 태그 3-4개\n- style_guide: Nano Banana 영어 스타일 프롬프트 40-70 단어\n\n반드시 JSON으로만.`;
+      const result = await generateText({ prompt, apiKey, schema, images: state.seriesRefs.length > 0 ? state.seriesRefs : null });
+      state.concepts = result.concepts;
+      renderConceptCards();
+      els.brainstormPanel.classList.remove('hidden');
+    } catch (e) { alert('아이디어 실패: ' + (e.message || e)); }
+    els.brainstormConceptsBtn.disabled = false;
+    els.brainstormBtnText.textContent = '컨셉 아이디어';
+  });
+
+  function renderConceptCards() {
+    els.conceptCards.innerHTML = '';
+    (state.concepts || []).forEach((c, idx) => {
+      const card = document.createElement('div');
+      card.className = 'concept-card';
+      card.innerHTML = `<div class="concept-card-title">${idx+1}. ${escapeHtml(c.title)}</div><div class="concept-card-mood">${escapeHtml(c.mood)}</div><div class="concept-card-style">${escapeHtml(c.style_guide)}</div><div class="concept-card-apply">→ 클릭하여 적용</div>`;
+      card.addEventListener('click', () => {
+        els.seriesStyle.value = c.style_guide;
+        LS.set('darkroom:style', c.style_guide);
+        els.brainstormPanel.classList.add('hidden');
+        els.seriesStyle.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      els.conceptCards.appendChild(card);
+    });
+  }
+
+  els.autoFillAllBtn.addEventListener('click', async () => {
+    const apiKey = state.apiKey.trim();
+    if (!apiKey) { alert('API 키가 없어요'); return; }
+    const topic = els.seriesTopic.value.trim();
+    if (!topic) { alert('주제를 먼저 입력하세요'); return; }
+    const style = els.seriesStyle.value.trim();
+    els.autoFillAllBtn.disabled = true;
+    els.autoFillBtnText.textContent = '작성 중…';
+    try {
+      const schema = { type: 'object', properties: { slots: { type: 'array', items: { type: 'string' } } }, required: ['slots'] };
+      const refNote = state.seriesRefs.length > 0 ? `\n참고 이미지 ${state.seriesRefs.length}장 제공됨` : '';
+      const prompt = `당신은 한국 커머스 브랜드의 카피·시각 디렉터. 다음 제품으로 ${state.slotCount}장 카드뉴스 시리즈 각 장의 이미지 생성 프롬프트 작성.\n\n주제: ${topic}\n스타일: ${style || '(없음)'}${refNote}\n\n규칙:\n- ${state.slotCount}장 내러티브: 훅→문제→해결→혜택→사용→신뢰→CTA\n- 각 장은 시각적 장면 (카피 아님)\n- 한국어 60-100자\n- 이미지 안 글자 금지\n- 구도/소품/조명 구체적으로\n\n출력: { "slots": [...] }\n반드시 JSON.`;
+      const result = await generateText({ prompt, apiKey, schema, images: state.seriesRefs.length > 0 ? state.seriesRefs : null });
+      const slots = (result.slots || []).slice(0, state.slotCount);
+      while (slots.length < state.slotCount) slots.push('');
+      state.slotPrompts = slots;
+      renderSlots();
+    } catch (e) { alert('자동 작성 실패: ' + (e.message || e)); }
+    els.autoFillAllBtn.disabled = false;
+    els.autoFillBtnText.textContent = '전체 AI 자동 작성';
+  });
+
+  async function handleSlotIdea(idx) {
+    const apiKey = state.apiKey.trim();
+    if (!apiKey) { alert('API 키가 없어요'); return; }
+    const topic = els.seriesTopic.value.trim();
+    if (!topic) { alert('주제를 먼저 입력하세요'); return; }
+    setSlotSparkleWorking(idx, true);
+    try {
+      const schema = { type: 'object', properties: { prompt: { type: 'string' } }, required: ['prompt'] };
+      const style = els.seriesStyle.value.trim();
+      const otherSlots = state.slotPrompts.map((p, i) => (i !== idx && p) ? `${i+1}장: ${p.slice(0, 80)}` : null).filter(Boolean).join('\n');
+      const currentText = state.slotPrompts[idx]?.trim();
+      const refNote = state.seriesRefs.length > 0 ? `\n참고 이미지 ${state.seriesRefs.length}장 제공됨` : '';
+      const prompt = `${state.slotCount}장 중 ${idx+1}번째 장 이미지 프롬프트.\n\n주제: ${topic}\n스타일: ${style || '(없음)'}${refNote}\n${otherSlots ? `\n다른 장:\n${otherSlots}` : ''}${currentText ? `\n현재 내용: ${currentText}` : ''}\n\n${idx === 0 ? '첫 장은 훅.' : idx === state.slotCount-1 ? '마지막은 CTA.' : '중간 발전.'}\n\n출력: { "prompt": "한국어 60-100자" }\n반드시 JSON.`;
+      const result = await generateText({ prompt, apiKey, schema, images: state.seriesRefs.length > 0 ? state.seriesRefs : null });
+      state.slotPrompts[idx] = result.prompt;
+      const ta = els.slotsList.querySelector(`textarea[data-idx="${idx}"]`);
+      if (ta) ta.value = result.prompt;
+    } catch (e) { alert(`${idx+1}번 장 실패: ` + (e.message || e)); }
+    setSlotSparkleWorking(idx, false);
+  }
+
+  // SERIES GENERATE
+  els.seriesGenerateBtn.addEventListener('click', async () => {
+    const apiKey = state.apiKey.trim();
+    const topic = els.seriesTopic.value.trim();
+    const style = els.seriesStyle.value.trim();
+    if (!apiKey) return showSeriesError('API 키가 없어요.');
+    if (!topic && state.slotPrompts.every(p => !p.trim())) return showSeriesError('주제를 입력하거나 슬롯에 프롬프트를 쓰세요.');
+    hideSeriesError();
+    setSeriesLoading(true);
+    const finalPrompts = state.slotPrompts.map((p, idx) => {
+      const core = (p && p.trim()) ? p.trim() : `${topic} — ${idx+1}번 장`;
+      const parts = [];
+      if (topic) parts.push(`[주제: ${topic}]`);
+      parts.push(core);
+      if (style) parts.push(`[스타일: ${style}]`);
+      if (state.seriesRefs.length > 0) parts.push(`[참고 이미지 톤·분위기 반영]`);
+      parts.push(`[Aspect ratio: ${state.ratio}]`);
+      return parts.join('\n');
+    });
+    for (let i = 0; i < state.slotCount; i++) setSlotStatus(i, 'loading');
+    const results = await Promise.all(finalPrompts.map(async (prompt, idx) => {
+      try {
+        const img = await generateImage({ prompt, model: state.seriesModel, aspectRatio: state.ratio, apiKey, refImages: state.seriesRefs });
+        setSlotStatus(idx, 'done');
+        const cropped = await resizeAndCrop(img.data, img.mimeType, state.outW, state.outH);
+        return { ok: true, result: { id: `s-${Date.now()}-${idx}-${Math.random().toString(36).slice(2,6)}`, kind: 'series', prompt, model: state.seriesModel, timestamp: Date.now(), data: cropped.data, mimeType: cropped.mimeType, w: state.outW, h: state.outH } };
+      } catch (e) { setSlotStatus(idx, 'err'); return { ok: false, error: e.message || String(e), idx }; }
+    }));
+    const successes = results.filter(r => r.ok).map(r => r.result);
+    const failures = results.filter(r => !r.ok);
+    if (successes.length > 0) { state.gallery = [...successes, ...state.gallery]; renderGallery(); }
+    if (failures.length > 0) showSeriesError(`${failures.length}/${state.slotCount}장 실패 — ${failures[0].error}`);
+    setTimeout(() => {
+      for (let i = 0; i < state.slotCount; i++) {
+        const cur = els.slotsList.querySelector(`.slot-status[data-idx="${i}"]`);
+        if (cur && (cur.classList.contains('done') || cur.classList.contains('err'))) setTimeout(() => setSlotStatus(i, ''), 2000);
+      }
+    }, 100);
+    setSeriesLoading(false);
+  });
+
+  function setSeriesLoading(isLoading) {
+    state.seriesLoading = isLoading;
+    els.seriesGenerateBtn.disabled = isLoading;
+    const icon = els.seriesGenerateBtn.querySelector('.btn-icon');
+    if (isLoading) { icon.innerHTML = '<div class="spinner"></div>'; els.seriesBtnText.textContent = `현상 중… (${state.slotCount}장 병렬)`; }
+    else { icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4V2m0 14v-2M8 9h2M20 9h2M17.8 11.8L19 13M15 9h0M17.8 6.2L19 5M3 21l9-9M12.2 6.2L11 5"/></svg>'; els.seriesBtnText.textContent = '시리즈 생성'; }
+  }
+  function showSeriesError(msg) { els.seriesError.textContent = msg; els.seriesError.classList.remove('hidden'); }
+  function hideSeriesError() { els.seriesError.classList.add('hidden'); }
+
+  // EDITOR upload
+  function bindUploadZone() {
+    els.uploadZone = $('upload-zone');
+    if (!els.uploadZone) return;
+    els.uploadZone.addEventListener('click', () => els.fileInput.click());
+    ['dragenter', 'dragover'].forEach(ev => els.uploadZone.addEventListener(ev, (e) => { e.preventDefault(); els.uploadZone.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach(ev => els.uploadZone.addEventListener(ev, (e) => { e.preventDefault(); els.uploadZone.classList.remove('drag'); }));
+    els.uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer?.files?.[0];
+      if (file && file.type.startsWith('image/')) loadEditSource(file);
+    });
+  }
+  bindUploadZone();
+  els.fileInput.addEventListener('change', (e) => { const file = e.target.files?.[0]; if (file) loadEditSource(file); });
+
+  async function loadEditSource(fileOrObj) {
+    try {
+      let src;
+      if (fileOrObj instanceof File) {
+        if (fileOrObj.size > 20 * 1024 * 1024) throw new Error('20MB 초과');
+        src = await fileToBase64(fileOrObj);
+      } else {
+        src = { data: fileOrObj.data, mimeType: fileOrObj.mimeType, name: fileOrObj.name || 'gallery.png' };
+      }
+      state.editSource = src;
+      state.editSourceDim = await getImageDims(src.data, src.mimeType);
+      renderUploadedPreview();
+      els.editorGenerateBtn.disabled = false;
+      els.editIdeasBtn.disabled = false;
+      // Refresh crop UI with new upscale hints
+      renderCropPlatformList();
+      updateCropUI();
+    } catch (e) { alert('불러오기 실패: ' + e.message); }
+  }
+
+  function renderUploadedPreview() {
+    if (!state.editSource) {
+      els.uploadContainer.innerHTML = `<div class="upload-zone" id="upload-zone"><div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><p>클릭하거나 파일을 끌어놓으세요</p><p class="hint">PNG · JPG · WebP — 최대 20MB</p></div>`;
+      bindUploadZone();
+      els.editorGenerateBtn.disabled = true;
+      els.editIdeasBtn.disabled = true;
+      return;
+    }
+    els.uploadContainer.innerHTML = `<div class="uploaded-preview"><img src="data:${state.editSource.mimeType};base64,${state.editSource.data}" alt="" id="uploaded-img" /><div class="preview-meta"><span>${escapeHtml(state.editSource.name || 'image')} · <span id="preview-dim">...</span></span><button class="secondary-btn" id="clear-upload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>제거</button></div></div>`;
+    const img = $('uploaded-img');
+    img.onload = () => { const dim = $('preview-dim'); if (dim) dim.textContent = `${img.naturalWidth}×${img.naturalHeight}`; };
+    $('clear-upload').addEventListener('click', () => {
+      state.editSource = null;
+      state.editSourceDim = null;
+      renderUploadedPreview();
+      els.editIdeasPanel.classList.add('hidden');
+      renderCropPlatformList();
+      updateCropUI();
+    });
+  }
+
+  els.editIdeasBtn.addEventListener('click', async () => {
+    const apiKey = state.apiKey.trim();
+    if (!apiKey) { alert('API 키가 없어요'); return; }
+    if (!state.editSource) { alert('원본 이미지를 먼저 업로드하세요'); return; }
+    els.editIdeasBtn.disabled = true;
+    els.editIdeasBtnText.textContent = '생각 중…';
+    els.editIdeasPanel.classList.add('hidden');
+    try {
+      const schema = { type: 'object', properties: { ideas: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, mood: { type: 'string' }, style_guide: { type: 'string' } }, required: ['title','mood','style_guide'] } } }, required: ['ideas'] };
+      const allImgs = [state.editSource, ...state.editRefs];
+      const refNote = state.editRefs.length > 0 ? `첫 번째는 원본, 이후 ${state.editRefs.length}장은 참고.` : '첫 번째가 원본.';
+      const prompt = `Nano Banana 이미지 에디터. ${refNote}\n\n편집 방향 3가지 제안.\n- title: 한국어 12자 이내\n- mood: 영어 대문자 태그\n- style_guide: 한국어 편집 지시 50-100자\n\n반드시 JSON.`;
+      const result = await generateText({ prompt, apiKey, schema, images: allImgs });
+      state.editIdeas = result.ideas;
+      renderEditIdeaCards();
+      els.editIdeasPanel.classList.remove('hidden');
+    } catch (e) { alert('편집 아이디어 실패: ' + (e.message || e)); }
+    els.editIdeasBtn.disabled = !state.editSource;
+    els.editIdeasBtnText.textContent = '편집 아이디어';
+  });
+
+  function renderEditIdeaCards() {
+    els.editIdeasCards.innerHTML = '';
+    (state.editIdeas || []).forEach((c, idx) => {
+      const card = document.createElement('div');
+      card.className = 'concept-card';
+      card.innerHTML = `<div class="concept-card-title">${idx+1}. ${escapeHtml(c.title)}</div><div class="concept-card-mood">${escapeHtml(c.mood)}</div><div class="concept-card-style">${escapeHtml(c.style_guide)}</div><div class="concept-card-apply">→ 클릭하여 적용</div>`;
+      card.addEventListener('click', () => { els.editPrompt.value = c.style_guide; els.editIdeasPanel.classList.add('hidden'); els.editPrompt.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+      els.editIdeasCards.appendChild(card);
+    });
+  }
+
+  els.editorGenerateBtn.addEventListener('click', async () => {
+    const apiKey = state.apiKey.trim();
+    const prompt = els.editPrompt.value.trim();
+    if (!apiKey) return showEditorError('API 키가 없어요.');
+    if (!state.editSource) return showEditorError('원본 이미지를 업로드하세요.');
+    if (!prompt) return showEditorError('편집 지시를 입력하세요.');
+    hideEditorError();
+    setEditorLoading(true);
+    try {
+      const allImgs = [state.editSource, ...state.editRefs];
+      const finalPrompt = state.editRefs.length > 0
+        ? `첫 번째가 편집할 원본, 이후 ${state.editRefs.length}장은 참고 이미지. 참고의 톤·스타일 반영하여 원본을 다음과 같이 편집:\n\n${prompt}`
+        : prompt;
+      const img = await generateImage({ prompt: finalPrompt, model: state.editModel, apiKey, refImages: allImgs });
+      const dim = await getImageDims(img.data, img.mimeType);
+      state.gallery = [{ id: `e-${Date.now()}-${Math.random().toString(36).slice(2,6)}`, kind: 'edit', prompt, model: state.editModel, timestamp: Date.now(), data: img.data, mimeType: img.mimeType, w: dim.w, h: dim.h }, ...state.gallery];
+      renderGallery();
+    } catch (e) { showEditorError(e.message || String(e)); }
+    setEditorLoading(false);
+  });
+
+  function setEditorLoading(isLoading) {
+    state.editorLoading = isLoading;
+    els.editorGenerateBtn.disabled = isLoading || !state.editSource;
+    const icon = els.editorGenerateBtn.querySelector('.btn-icon');
+    if (isLoading) { icon.innerHTML = '<div class="spinner"></div>'; els.editorBtnText.textContent = '편집 중…'; }
+    else { icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'; els.editorBtnText.textContent = '편집 실행'; }
+  }
+  function showEditorError(msg) { els.editorError.textContent = msg; els.editorError.classList.remove('hidden'); }
+  function hideEditorError() { els.editorError.classList.add('hidden'); }
+
+  // ============ EDITOR SUBTABS (AI 편집 / 크롭만) ============
+  els.editorSubtabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const mode = tab.dataset.editorMode;
+      state.editorMode = mode;
+      els.editorSubtabs.forEach(t => t.classList.toggle('active', t === tab));
+      els.editorAiPane.classList.toggle('hidden', mode !== 'ai');
+      els.editorCropPane.classList.toggle('hidden', mode !== 'crop');
+      // 참고 이미지 섹션은 AI 모드에만 의미 있음
+      els.editorAiLeftExtra.classList.toggle('hidden', mode !== 'ai');
+    });
+  });
+
+  // ============ CROP STUDIO ============
+  function getAllCropTargets() {
+    return [...state.customCrops, ...PLATFORM_PRESETS];
+  }
+
+  function saveCustomCrops() {
+    LS.set('darkroom:customCrops', JSON.stringify(state.customCrops));
+  }
+
+  function addCustomCrop(w, h, name) {
+    w = parseInt(w, 10); h = parseInt(h, 10);
+    if (!w || !h || w < 50 || h < 50 || w > 4096 || h > 4096) {
+      alert('사이즈는 50–4096px 범위의 정수여야 합니다.');
+      return false;
+    }
+    // Prevent dupes (same w×h with same name)
+    const cleanName = (name || '').trim();
+    const displayName = cleanName || `${w}×${h}`;
+    const dup = state.customCrops.find(c => c.w === w && c.h === h && (c.userName || '') === cleanName);
+    if (dup) {
+      alert(`같은 사이즈(${displayName})가 이미 추가되어 있습니다.`);
+      return false;
+    }
+    const id = `custom-${w}x${h}-${Date.now().toString(36)}`;
+    state.customCrops.unshift({
+      id, custom: true, category: 'custom',
+      emoji: '✏️', name: displayName, userName: cleanName,
+      ratio: `${w}:${h}`, w, h,
+      note: `커스텀 사이즈 · ${w}×${h}`,
+    });
+    saveCustomCrops();
+    renderCropPlatformList();
+    updateCropUI();
+    return true;
+  }
+
+  function removeCustomCrop(id) {
+    state.customCrops = state.customCrops.filter(c => c.id !== id);
+    state.cropSelectedPlatforms.delete(id);
+    saveCustomCrops();
+    renderCropPlatformList();
+    updateCropUI();
+  }
+
+  function getUpscaleNeeded(platform) {
+    // Only meaningful in 'exact' mode (ratio mode never upscales)
+    if (state.cropMode === 'ratio') return false;
+    if (!state.editSourceDim) return false;
+    return state.editSourceDim.w < platform.w || state.editSourceDim.h < platform.h;
+  }
+
+  // Mode selector wiring
+  if (els.cropModeSelector) {
+    els.cropModeSelector.addEventListener('click', (e) => {
+      const opt = e.target.closest('.crop-mode-option');
+      if (!opt) return;
+      const mode = opt.dataset.cropMode;
+      if (mode !== 'exact' && mode !== 'ratio') return;
+      state.cropMode = mode;
+      LS.set('darkroom:cropMode', mode);
+      els.cropModeSelector.querySelectorAll('.crop-mode-option').forEach(o => {
+        o.classList.toggle('selected', o.dataset.cropMode === mode);
+        const input = o.querySelector('input[type=radio]');
+        if (input) input.checked = (o.dataset.cropMode === mode);
+      });
+      // Re-render list so upscale badges update
+      renderCropPlatformList();
+    });
+    // Apply initial state from loaded prefs
+    els.cropModeSelector.querySelectorAll('.crop-mode-option').forEach(o => {
+      o.classList.toggle('selected', o.dataset.cropMode === state.cropMode);
+      const input = o.querySelector('input[type=radio]');
+      if (input) input.checked = (o.dataset.cropMode === state.cropMode);
+    });
+  }
+
+  function renderCropPlatformList() {
+    const list = els.cropPlatformList;
+    if (!list) return;
+
+    if (!state.editSource) {
+      list.innerHTML = `
+        <div class="crop-empty">
+          <strong>원본 이미지를 먼저 업로드하세요</strong>
+          왼쪽 ↖ 영역에 파일을 끌어놓거나 클릭해서 업로드하면<br/>
+          여기에 플랫폼별 선택지가 나타나요.
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    const custom = state.customCrops;
+    const commerce = PLATFORM_PRESETS.filter(p => p.category === 'commerce');
+    const sns = PLATFORM_PRESETS.filter(p => p.category === 'sns');
+
+    const appendLabel = (text) => {
+      const lbl = document.createElement('div');
+      lbl.className = 'crop-category-label';
+      lbl.textContent = text;
+      list.appendChild(lbl);
+    };
+
+    const appendItems = (items, isCustom) => {
+      items.forEach(p => {
+        const item = document.createElement('label');
+        item.className = 'crop-platform-item';
+        item.dataset.platformId = p.id;
+        const checked = state.cropSelectedPlatforms.has(p.id);
+        if (checked) item.classList.add('selected');
+        const upscale = getUpscaleNeeded(p);
+        const estBadge = p.estimated ? `<span class="crop-item-badge">추정</span>` : '';
+        const warnBadge = upscale ? `<span class="crop-item-warn">업스케일 필요</span>` : '';
+        const removeBtn = isCustom ? `<button class="crop-item-remove" data-remove-id="${p.id}" type="button" title="삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>` : '';
+        item.innerHTML = `
+          <input type="checkbox" data-platform-id="${p.id}" ${checked ? 'checked' : ''} />
+          <span class="crop-item-emoji">${p.emoji}</span>
+          <span class="crop-item-body">
+            <div class="crop-item-name">${escapeHtml(p.name)}${estBadge}</div>
+            <div class="crop-item-size">${p.w}×${p.h} · ${p.ratio}</div>
+          </span>
+          ${warnBadge}
+          ${removeBtn}
+        `;
+        const checkbox = item.querySelector('input');
+        checkbox.addEventListener('change', (e) => {
+          e.stopPropagation();
+          if (e.target.checked) state.cropSelectedPlatforms.add(p.id);
+          else state.cropSelectedPlatforms.delete(p.id);
+          item.classList.toggle('selected', e.target.checked);
+          updateCropUI();
+        });
+        // Row click toggles checkbox (but not when clicking remove button)
+        item.addEventListener('click', (e) => {
+          if (e.target === checkbox) return;
+          if (e.target.closest('.crop-item-remove')) return;
+          e.preventDefault();
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event('change'));
+        });
+        if (isCustom) {
+          const rmBtn = item.querySelector('.crop-item-remove');
+          if (rmBtn) {
+            rmBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (confirm(`"${p.name}" 커스텀 사이즈를 삭제할까요?`)) {
+                removeCustomCrop(p.id);
+              }
+            });
+          }
+        }
+        list.appendChild(item);
+      });
+    };
+
+    if (custom.length > 0) {
+      appendLabel('커스텀 (저장됨)');
+      appendItems(custom, true);
+    }
+    appendLabel('커머스');
+    appendItems(commerce, false);
+    appendLabel('SNS · 콘텐츠');
+    appendItems(sns, false);
+  }
+
+  function updateCropUI() {
+    if (!els.cropCountNum) return;
+    const count = state.cropSelectedPlatforms.size;
+    const total = PLATFORM_PRESETS.length + state.customCrops.length;
+    els.cropCountNum.textContent = count;
+    els.cropCountTotal.textContent = total;
+    els.cropRunBtn.disabled = !state.editSource || count === 0;
+    if (count > 0) {
+      els.cropRunBtnText.textContent = `일괄 크롭 실행 (${count}장 생성)`;
+    } else {
+      els.cropRunBtnText.textContent = '일괄 크롭 실행';
+    }
+  }
+
+  if (els.cropSelectAll) {
+    els.cropSelectAll.addEventListener('click', () => {
+      getAllCropTargets().forEach(p => state.cropSelectedPlatforms.add(p.id));
+      renderCropPlatformList();
+      updateCropUI();
+    });
+    els.cropSelectNone.addEventListener('click', () => {
+      state.cropSelectedPlatforms.clear();
+      renderCropPlatformList();
+      updateCropUI();
+    });
+    els.cropSelectCommerce.addEventListener('click', () => {
+      state.cropSelectedPlatforms.clear();
+      PLATFORM_PRESETS.filter(p => p.category === 'commerce').forEach(p => state.cropSelectedPlatforms.add(p.id));
+      renderCropPlatformList();
+      updateCropUI();
+    });
+    els.cropSelectSns.addEventListener('click', () => {
+      state.cropSelectedPlatforms.clear();
+      PLATFORM_PRESETS.filter(p => p.category === 'sns').forEach(p => state.cropSelectedPlatforms.add(p.id));
+      renderCropPlatformList();
+      updateCropUI();
+    });
+
+    els.cropRunBtn.addEventListener('click', handleBatchCrop);
+  }
+
+  // Custom size add handlers
+  if (els.cropCustomAddBtn) {
+    const tryAdd = () => {
+      const w = els.cropCustomW.value;
+      const h = els.cropCustomH.value;
+      const name = els.cropCustomName.value;
+      if (!w || !h) {
+        alert('가로·세로 사이즈를 모두 입력하세요.');
+        return;
+      }
+      if (addCustomCrop(w, h, name)) {
+        els.cropCustomW.value = '';
+        els.cropCustomH.value = '';
+        els.cropCustomName.value = '';
+        els.cropCustomW.focus();
+      }
+    };
+    els.cropCustomAddBtn.addEventListener('click', tryAdd);
+    // Enter key in any input triggers add
+    [els.cropCustomW, els.cropCustomH, els.cropCustomName].forEach(inp => {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); tryAdd(); }
+      });
+    });
+  }
+
+  async function handleBatchCrop() {
+    if (!state.editSource) return;
+    const selectedIds = Array.from(state.cropSelectedPlatforms);
+    if (selectedIds.length === 0) return;
+
+    const allTargets = getAllCropTargets();
+    const isRatioMode = state.cropMode === 'ratio';
+
+    // Warn if any need upscaling (only meaningful in 'exact' mode)
+    if (!isRatioMode) {
+      const upscaleList = selectedIds
+        .map(id => allTargets.find(p => p.id === id))
+        .filter(p => p && state.editSourceDim && (state.editSourceDim.w < p.w || state.editSourceDim.h < p.h));
+      if (upscaleList.length > 0) {
+        const names = upscaleList.map(p => `• ${p.name} (${p.w}×${p.h})`).join('\n');
+        const srcInfo = state.editSourceDim ? `${state.editSourceDim.w}×${state.editSourceDim.h}` : '알 수 없음';
+        if (!confirm(
+          `⚠️ 업스케일 경고\n\n` +
+          `원본 해상도: ${srcInfo}\n\n` +
+          `아래 플랫폼은 원본보다 큰 해상도라 이미지를 확대(업스케일)합니다. 디테일이 흐려질 수 있어요:\n\n${names}\n\n` +
+          `그대로 진행할까요?\n(취소 후 "비율만 맞춤" 모드로 바꾸거나 AI 업스케일을 사용할 수도 있어요)`
+        )) {
+          return;
+        }
+      }
+    }
+
+    hideCropError();
+    els.cropRunBtn.disabled = true;
+    const results = [];
+    const failures = [];
+
+    for (let i = 0; i < selectedIds.length; i++) {
+      const id = selectedIds[i];
+      const platform = allTargets.find(p => p.id === id);
+      if (!platform) continue;
+
+      els.cropRunBtnText.textContent = `크롭 중... (${i + 1}/${selectedIds.length}) ${platform.emoji}`;
+
+      try {
+        let cropped, outW, outH, upscaled;
+        if (isRatioMode) {
+          // Ratio mode: crop to aspect, no resize — output = maximum source-preserving size
+          cropped = await cropToRatio(
+            state.editSource.data,
+            state.editSource.mimeType,
+            platform.w, platform.h
+          );
+          outW = cropped.w; outH = cropped.h;
+          upscaled = false;
+        } else {
+          // Exact mode: resize to target pixel dimensions
+          cropped = await resizeAndCrop(
+            state.editSource.data,
+            state.editSource.mimeType,
+            platform.w, platform.h
+          );
+          outW = platform.w; outH = platform.h;
+          upscaled = state.editSourceDim && (state.editSourceDim.w < platform.w || state.editSourceDim.h < platform.h);
+        }
+        const modeTag = isRatioMode ? '비율 유지' : (upscaled ? '업스케일' : '정확한 사이즈');
+        const platformForFile = platform.custom
+          ? (platform.userName ? slugify(platform.userName) + '-' + outW + 'x' + outH : outW + 'x' + outH)
+          : `${platform.id}${isRatioMode ? '-ratio' : ''}`;
+        results.push({
+          id: `c-${Date.now()}-${id}-${Math.random().toString(36).slice(2, 6)}`,
+          kind: 'crop',
+          prompt: `${platform.emoji} ${platform.name} · ${modeTag} — ${state.editSource.name || 'image'}`,
+          model: isRatioMode ? 'canvas · ratio-crop' : 'canvas · exact-resize',
+          platform: platformForFile,
+          platformName: platform.name,
+          cropMode: state.cropMode,
+          timestamp: Date.now(),
+          data: cropped.data,
+          mimeType: cropped.mimeType,
+          w: outW,
+          h: outH,
+          upscaled,
+        });
+      } catch (e) {
+        console.error(`Crop failed for ${id}:`, e);
+        failures.push({ platform: platform.name, error: e.message || String(e) });
+      }
+    }
+
+    if (results.length > 0) {
+      state.gallery = [...results, ...state.gallery];
+      renderGallery();
+    }
+
+    if (failures.length > 0) {
+      showCropError(`${failures.length}건 실패: ${failures.map(f => `${f.platform} (${f.error})`).join(', ')}`);
+    }
+
+    els.cropRunBtn.disabled = false;
+    updateCropUI();
+  }
+
+  // Simple slugify for Korean/English names in filenames
+  function slugify(s) {
+    return String(s)
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w가-힣\-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 24);
+  }
+
+  function showCropError(msg) { els.cropError.textContent = msg; els.cropError.classList.remove('hidden'); }
+  function hideCropError() { els.cropError.classList.add('hidden'); }
+
+  // Initial render
+  renderCropPlatformList();
+  updateCropUI();
+
+  // IMAGE API
+  async function generateImage({ prompt, model, aspectRatio, apiKey, refImages }) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const parts = [];
+    if (refImages && refImages.length) for (const img of refImages) parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+    parts.push({ text: prompt });
+    const body = { contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE'] } };
+    if (aspectRatio) body.generationConfig.imageConfig = { aspectRatio };
+    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }, body: JSON.stringify(body) });
+    if (!response.ok) {
+      let msg = `HTTP ${response.status}`;
+      try { const err = await response.json(); msg = err?.error?.message || msg; }
+      catch { try { msg = (await response.text()).slice(0, 300); } catch {} }
+      throw new Error(msg);
+    }
+    const data = await response.json();
+    if (data?.promptFeedback?.blockReason) throw new Error(`차단됨: ${data.promptFeedback.blockReason}`);
+    const candidate = data?.candidates?.[0];
+    if (!candidate) throw new Error('응답이 비어있습니다');
+    const respParts = candidate?.content?.parts || [];
+    const imgPart = respParts.find(p => p.inlineData || p.inline_data);
+    if (!imgPart) {
+      const textPart = respParts.find(p => p.text);
+      const reason = candidate.finishReason && candidate.finishReason !== 'STOP' ? `(${candidate.finishReason}) ` : '';
+      throw new Error(reason + (textPart?.text?.slice(0, 200) || '이미지 응답 없음'));
+    }
+    const inline = imgPart.inlineData || imgPart.inline_data;
+    return { data: inline.data, mimeType: inline.mimeType || inline.mime_type || 'image/png' };
+  }
+
+  // GALLERY
+  els.galleryFilters.addEventListener('click', (e) => {
+    const btn = e.target.closest('.gallery-filter');
+    if (!btn) return;
+    state.galleryFilter = btn.dataset.filter;
+    els.galleryFilters.querySelectorAll('.gallery-filter').forEach(f => f.classList.toggle('active', f === btn));
+    renderGallery();
+  });
+
+  function renderGallery() {
+    const filtered = state.galleryFilter === 'all' ? state.gallery : state.gallery.filter(g => g.kind === state.galleryFilter);
+    els.gallery.innerHTML = '';
+    if (filtered.length === 0) {
+      els.gallery.innerHTML = `<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><p>${state.gallery.length === 0 ? 'the darkroom awaits' : 'no prints in this filter'}</p><p class="hint">${state.gallery.length === 0 ? '시리즈 · 편집 · 결과물 클릭으로 refine까지' : '다른 필터를 선택해보세요'}</p></div>`;
+      els.galleryCount.textContent = `${state.gallery.length} ${state.gallery.length === 1 ? 'PRINT' : 'PRINTS'}`;
+      if (state.gallery.length === 0) els.clearBtn.classList.add('hidden'); else els.clearBtn.classList.remove('hidden');
+      return;
+    }
+    els.galleryCount.textContent = `${filtered.length}/${state.gallery.length} PRINTS`;
+    els.clearBtn.classList.remove('hidden');
+    filtered.forEach((img, idx) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.animationDelay = `${Math.min(idx, 8) * 0.04}s`;
+      const ratioHint = (img.w && img.h) ? `${img.w}×${img.h}` : '';
+      const badgeMap = { series: 'SERIES', edit: 'EDIT', refine: 'REFINE', crop: 'CROP' };
+      const badge = badgeMap[img.kind] || 'IMG';
+      const badgeClass = img.kind === 'refine' ? 'card-badge refine' : img.kind === 'crop' ? 'card-badge crop' : 'card-badge';
+      card.innerHTML = `
+        <div class="card-img-wrap">
+          <img src="data:${img.mimeType};base64,${img.data}" alt="" loading="lazy" />
+          <span class="${badgeClass}">${badge}${ratioHint ? ' · ' + ratioHint : ''}</span>
+        </div>
+        <div class="card-overlay">
+          <p class="card-prompt">${escapeHtml((img.prompt || '').split('\n')[0])}</p>
+          <div class="card-actions">
+            <button class="card-action refine" data-action="refine" title="Refine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
+            <button class="card-action" data-action="download" title="다운로드"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+            <button class="card-action edit-source" data-action="to-editor" title="편집"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+            <button class="card-action ref-add" data-action="to-ref" title="참고 이미지로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>
+            <button class="card-action delete" data-action="delete" title="삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+          </div>
+        </div>
+      `;
+      card.addEventListener('click', (e) => {
+        const actBtn = e.target.closest('[data-action]');
+        if (actBtn) {
+          e.stopPropagation();
+          const action = actBtn.dataset.action;
+          if (action === 'download') downloadImage(img);
+          if (action === 'delete') { state.gallery = state.gallery.filter(g => g.id !== img.id); renderGallery(); }
+          if (action === 'refine') { openLightbox(img); setTimeout(() => document.querySelector('.refine-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }
+          if (action === 'to-editor') {
+            loadEditSource({ data: img.data, mimeType: img.mimeType, name: `gallery-${img.id}.png` });
+            const editorTab = els.tabs.find(t => t.dataset.tab === 'editor');
+            if (editorTab) { editorTab.click(); editorTab.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+          }
+          if (action === 'to-ref') {
+            const refEntry = { data: img.data, mimeType: img.mimeType, name: `gallery-${img.id}.png` };
+            if (state.currentTab === 'series') {
+              if (state.seriesRefs.length >= MAX_REFS) { alert(`최대 ${MAX_REFS}장`); return; }
+              state.seriesRefs.push(refEntry); renderRefStrip('series');
+            } else {
+              if (state.editRefs.length >= MAX_REFS) { alert(`최대 ${MAX_REFS}장`); return; }
+              state.editRefs.push(refEntry); renderRefStrip('editor');
+            }
+          }
+        } else openLightbox(img);
+      });
+      els.gallery.appendChild(card);
+    });
+  }
+
+  function downloadImage(img) {
+    const link = document.createElement('a');
+    link.href = `data:${img.mimeType};base64,${img.data}`;
+    const ts = new Date(img.timestamp).toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const suffix = img.w && img.h ? `-${img.w}x${img.h}` : '';
+    const platformTag = img.platform ? `-${img.platform}` : '';
+    link.download = `darkroom-${img.kind}${platformTag}-${ts}${suffix}.png`;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  }
+
+  // LIGHTBOX + REFINE
+  function openLightbox(img) {
+    state.lightbox.imageId = img.id;
+    state.lightbox.working = false;
+    renderLightbox();
+    els.lightbox.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLightbox() {
+    state.lightbox.imageId = null;
+    els.lightbox.classList.add('hidden');
+    els.lightboxBody.innerHTML = '';
+    document.body.style.overflow = '';
+  }
+  els.lightboxClose.addEventListener('click', closeLightbox);
+  els.lightbox.addEventListener('click', (e) => { if (e.target === els.lightbox) closeLightbox(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !els.lightbox.classList.contains('hidden')) closeLightbox();
+  });
+
+  function renderLightbox() {
+    const img = state.gallery.find(g => g.id === state.lightbox.imageId);
+    if (!img) { closeLightbox(); return; }
+    const sourceImg = img.sourceId ? state.gallery.find(g => g.id === img.sourceId) : null;
+
+    const presetsHtml = REFINE_PRESETS.map(group => `
+      <div class="preset-group">
+        <div class="preset-group-title">${escapeHtml(group.title)}</div>
+        <div class="preset-grid">
+          ${group.items.map(item => `
+            <button class="preset-chip" data-preset-prompt="${escapeHtml(item.prompt)}" type="button">
+              <span class="emoji">${item.emoji}</span>
+              <span class="label">${escapeHtml(item.label)}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    const badgeMap = { series: 'SERIES', edit: 'EDIT', refine: 'REFINE', crop: 'CROP' };
+    const srcInfo = sourceImg ? `<span class="sep">·</span><span class="source-link" id="open-source">← 원본 보기</span>` : '';
+
+    els.lightboxBody.innerHTML = `
+      <div class="lightbox-image-col">
+        <img src="data:${img.mimeType};base64,${img.data}" alt="" />
+        <div class="lightbox-meta-inline">
+          <div class="prompt-text">${escapeHtml(img.prompt || '')}</div>
+          <div class="info-row">
+            <span>${badgeMap[img.kind] || 'IMG'}</span><span class="sep">·</span>
+            <span>${escapeHtml(img.model)}</span><span class="sep">·</span>
+            <span>${img.w && img.h ? img.w + '×' + img.h : ''}</span><span class="sep">·</span>
+            <span>${new Date(img.timestamp).toLocaleString('ko-KR')}</span>
+            ${srcInfo}
+          </div>
+        </div>
+        <div class="lightbox-actions-row">
+          <button class="lb-action primary" id="lb-download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>다운로드</button>
+          <button class="lb-action" id="lb-to-editor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>에디터</button>
+          <button class="lb-action" id="lb-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>삭제</button>
+        </div>
+      </div>
+      <div class="refine-panel">
+        <div class="refine-panel-header">
+          <h3>Quick <em>Refine</em></h3>
+          <span class="kicker">SAME · TWEAKED</span>
+        </div>
+        <div>
+          <div class="refine-section-label">원클릭 프리셋 <span class="hint">— 클릭 한 번으로 실행</span></div>
+          ${presetsHtml}
+        </div>
+        <div>
+          <div class="refine-section-label">커스텀 지시</div>
+          <div class="refine-custom-wrap">
+            <textarea class="refine-custom-input" id="refine-custom" rows="3" placeholder="예) 배경만 좀 더 정돈해주세요."></textarea>
+            <div class="refine-action-row">
+              <button class="refine-run-btn" id="refine-run">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                <span id="refine-run-text">Refine 실행</span>
+              </button>
+              <select class="refine-model-select" id="refine-model">
+                <option value="gemini-3-pro-image-preview" ${state.lightbox.refineModel === 'gemini-3-pro-image-preview' ? 'selected' : ''}>Pro ~$0.134</option>
+                <option value="gemini-2.5-flash-image" ${state.lightbox.refineModel === 'gemini-2.5-flash-image' ? 'selected' : ''}>Nano ~$0.039</option>
+              </select>
+            </div>
+            <div id="refine-status-wrap"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    $('lb-download').addEventListener('click', () => downloadImage(img));
+    $('lb-to-editor').addEventListener('click', () => {
+      loadEditSource({ data: img.data, mimeType: img.mimeType, name: `gallery-${img.id}.png` });
+      const editorTab = els.tabs.find(t => t.dataset.tab === 'editor');
+      if (editorTab) editorTab.click();
+      closeLightbox();
+      setTimeout(() => editorTab.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    });
+    $('lb-delete').addEventListener('click', () => {
+      if (confirm('이 이미지를 삭제할까요?')) {
+        state.gallery = state.gallery.filter(g => g.id !== img.id);
+        renderGallery();
+        closeLightbox();
+      }
+    });
+    if (sourceImg) $('open-source').addEventListener('click', () => openLightbox(sourceImg));
+    $('refine-model').addEventListener('change', (e) => {
+      state.lightbox.refineModel = e.target.value;
+      LS.set('darkroom:refineModel', state.lightbox.refineModel);
+    });
+
+    els.lightboxBody.querySelectorAll('.preset-chip').forEach(chip => {
+      chip.addEventListener('click', () => { handleRefine(img, chip.dataset.presetPrompt); });
+    });
+
+    $('refine-run').addEventListener('click', () => {
+      const customPrompt = $('refine-custom').value.trim();
+      if (!customPrompt) { showRefineStatus('error', '수정 지시를 입력하거나 프리셋을 선택하세요.'); return; }
+      handleRefine(img, customPrompt);
+    });
+    $('refine-custom').addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); $('refine-run').click(); }
+    });
+  }
+
+  function showRefineStatus(type, text) {
+    const wrap = $('refine-status-wrap');
+    if (!wrap) return;
+    if (type === 'working') wrap.innerHTML = `<div class="refine-status working"><div class="spinner" style="width:12px;height:12px;border-width:1.5px;color:var(--cyan)"></div>${escapeHtml(text)}</div>`;
+    else if (type === 'error') wrap.innerHTML = `<div class="refine-status error">${escapeHtml(text)}</div>`;
+    else if (type === 'success') wrap.innerHTML = `<div class="refine-status success">${escapeHtml(text)}</div>`;
+    else wrap.innerHTML = '';
+  }
+
+  function setRefineButtonsDisabled(disabled) {
+    els.lightboxBody.querySelectorAll('.preset-chip').forEach(c => c.disabled = disabled);
+    const runBtn = $('refine-run');
+    if (runBtn) {
+      runBtn.disabled = disabled;
+      const txt = $('refine-run-text');
+      if (txt) txt.textContent = disabled ? 'Refine 중…' : 'Refine 실행';
+    }
+  }
+
+  async function handleRefine(sourceImg, instruction) {
+    const apiKey = state.apiKey.trim();
+    if (!apiKey) { showRefineStatus('error', 'API 키가 없어요.'); return; }
+    if (state.lightbox.working) return;
+    state.lightbox.working = true;
+    setRefineButtonsDisabled(true);
+    showRefineStatus('working', 'refine 중… (수 초 소요)');
+    try {
+      const finalPrompt = `아래 첨부된 이미지를 다음과 같이 수정해 주세요. 원본의 핵심 주제·구도·피사체는 그대로 유지하면서 지시한 부분만 바꾸세요.\n\n수정 지시:\n${instruction}`;
+      const result = await generateImage({ prompt: finalPrompt, model: state.lightbox.refineModel, apiKey, refImages: [{ data: sourceImg.data, mimeType: sourceImg.mimeType }] });
+      let finalData = result.data, finalMime = result.mimeType, finalW, finalH;
+      if (sourceImg.kind === 'series' && sourceImg.w && sourceImg.h) {
+        const cropped = await resizeAndCrop(result.data, result.mimeType, sourceImg.w, sourceImg.h);
+        finalData = cropped.data; finalMime = cropped.mimeType;
+        finalW = sourceImg.w; finalH = sourceImg.h;
+      } else {
+        const dim = await getImageDims(result.data, result.mimeType);
+        finalW = dim.w; finalH = dim.h;
+      }
+      const newItem = {
+        id: `r-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+        kind: 'refine', prompt: instruction, model: state.lightbox.refineModel,
+        timestamp: Date.now(), data: finalData, mimeType: finalMime,
+        w: finalW, h: finalH, sourceId: sourceImg.id,
+      };
+      state.gallery = [newItem, ...state.gallery];
+      renderGallery();
+      showRefineStatus('success', '✓ 완료! 새 이미지가 갤러리에 추가되었어요.');
+      setTimeout(() => {
+        if (state.lightbox.imageId) {
+          state.lightbox.imageId = newItem.id;
+          state.lightbox.working = false;
+          renderLightbox();
+          els.lightbox.scrollTop = 0;
+        }
+      }, 900);
+    } catch (e) {
+      showRefineStatus('error', 'Refine 실패: ' + (e.message || String(e)));
+      state.lightbox.working = false;
+      setRefineButtonsDisabled(false);
+    }
+  }
+
+  // CLEAR
+  els.clearBtn.addEventListener('click', () => {
+    if (state.gallery.length === 0) return;
+    if (!state.confirmClear) {
+      state.confirmClear = true;
+      els.clearBtn.classList.add('confirm');
+      els.clearBtnText.textContent = '정말로?';
+      state.confirmTimer = setTimeout(() => {
+        state.confirmClear = false;
+        els.clearBtn.classList.remove('confirm');
+        els.clearBtnText.textContent = '모두 비우기';
+      }, 3000);
+      return;
+    }
+    state.gallery = []; renderGallery();
+    state.confirmClear = false;
+    els.clearBtn.classList.remove('confirm');
+    els.clearBtnText.textContent = '모두 비우기';
+    if (state.confirmTimer) clearTimeout(state.confirmTimer);
+  });
+
+})();
+</script>
+</body>
+</html>
